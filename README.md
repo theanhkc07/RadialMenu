@@ -1,8 +1,8 @@
-# Rhino Radial menu (MacOS Only)
+# Rhino Radial menu in Rhino3D (Windows Only)
 <br/><br/>
 ## What it does
 Radial Menu for Rhinoceros V8.0 on Windows
-The aim of this plugin is to provide a radial menu to quick access your most used command within a click or shortcut (trigger keys)
+The aim of this plugin is to provide a radial menu to quick access your most used commands with a single click or shortcut (trigger keys)
 <br>
 The menu can be configured by just drag & drop items, either from Rhino toolbars, either inside the radial menu itself to re-arrange items.
 
