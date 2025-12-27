@@ -435,8 +435,9 @@ namespace RadialMenuPlugin.Controls.Buttons.MenuButton
             switch (e.Buttons)
             {
                 case MouseButtons.Primary:
-                    // We can drag icons with "command" modifier + LMB => Drag is forbidden if button is a "folder"
-                    if (e.Modifiers == Keys.Application)
+                    // We can drag icons with "Control" modifier + LMB => Drag is forbidden if button is a "folder"
+                    // Fix: Use Keys.Control instead of Keys.Application (which is for Mac/Context)
+                    if (e.Modifiers.HasFlag(Keys.Control))
                     {
                         if (_Model.Properties.IsActive && States.IsEditMode)
                         {

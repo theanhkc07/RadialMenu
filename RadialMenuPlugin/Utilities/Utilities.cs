@@ -100,6 +100,8 @@ namespace RadialMenuPlugin.Utilities
         /// <returns></returns>
         public static DragSourceType dragSourceType(Control source)
         {
+            if (source == null) return DragSourceType.unknown;
+
             if (source.GetType() == typeof(MenuButton))
             {
                 return DragSourceType.radialMenuItem;
