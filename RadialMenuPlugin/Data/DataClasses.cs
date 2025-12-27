@@ -220,22 +220,34 @@ namespace RadialMenuPlugin.Data
         /// <returns></returns>
         public bool IsPointInShape(PointF location)
         {
-            var bmData = Images.SectorMask.Lock();
-            var p = Point.Round(location);
-            try
-            {
-                // var color = images.sectorMask.GetPixel(p);
-                var color = bmData.GetPixel(p);
-                return color.B == 1 ? true : false;
-            }
-            catch
-            {
-                return false;
-            }
-            finally
-            {
-                bmData.Dispose();
-            }
+            // Use mathematical hit testing (Atan2) instead of bitmap mask for better accuracy and to avoid DPI/AntiAlias issues
+            // 1. Convert local location (relative to Bounds/Control) to World location (relative to ArcCenter)
+            var worldLocation = ConvertLocalToWorld(location);
+
+            // 2. Calculate distance from center (Radius check)
+            var dx = worldLocation.X - ArcCenter.X;
+            var dy = worldLocation.Y - ArcCenter.Y;
+            var dist = Math.Sqrt(dx * dx + dy * dy);
+
+            var outerRadius = InnerRadius + Thickness;
+            // Add epsilon for floating point precision
+            if (dist < InnerRadius - 0.1 || dist > outerRadius + 0.1) return false;
+
+            // 3. Calculate Angle
+            var angleRad = Math.Atan2(dy, dx); // -PI to PI
+            var angleDeg = angleRad * (180.0 / Math.PI);
+            
+            // Normalize angle to [0, 360]
+            if (angleDeg < 0) angleDeg += 360.0;
+
+            // Normalize StartAngle and EndAngle to handle wrapping (e.g. Start 350, Sweep 20 -> End 10)
+            // It's easier to rotate the angle so StartAngle becomes 0
+            var relativeAngle = angleDeg - StartAngle;
+            while (relativeAngle < -0.001) relativeAngle += 360.0;
+            while (relativeAngle >= 360.0 - 0.001) relativeAngle -= 360.0;
+
+            // Check if angle is within sweep
+            return relativeAngle <= SweepAngle + 0.001;
         }
     }
 }

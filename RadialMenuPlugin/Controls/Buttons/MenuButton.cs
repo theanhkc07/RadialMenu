@@ -637,11 +637,21 @@ namespace RadialMenuPlugin.Controls.Buttons.MenuButton
             if (_Model.Properties.Icon != null && _Model.Properties.IsActive)
             {
                 // Compute icon position in layout
-                var arcCenterWorld = _SectorData.SectorCenter();
-                var arcCenterLocal = _SectorData.ConvertWorldToLocal(arcCenterWorld);
-                var posX = arcCenterLocal.X - (_Model.Properties.Icon.Size.Width / 2);
-                var posY = arcCenterLocal.Y - (_Model.Properties.Icon.Size.Height / 2);
-                Move(_Buttons[ButtonType.icon], (int)posX, (int)posY); // update icon location
+                // Use double precision and manual calculation to ensure center alignment
+                var centerRadius = _SectorData.InnerRadius + (_SectorData.Thickness / 2.0);
+                var bisectorAngleRad = (_SectorData.StartAngle + _SectorData.SweepAngle / 2.0) * (Math.PI / 180.0);
+                
+                var arcCenterX = _SectorData.ArcCenter.X + centerRadius * Math.Cos(bisectorAngleRad);
+                var arcCenterY = _SectorData.ArcCenter.Y + centerRadius * Math.Sin(bisectorAngleRad);
+
+                // Convert World to Local manually relative to Bounds
+                var localX = arcCenterX - _SectorData.Bounds.X;
+                var localY = arcCenterY - _SectorData.Bounds.Y;
+
+                var posX = localX - (_Model.Properties.Icon.Size.Width / 2.0);
+                var posY = localY - (_Model.Properties.Icon.Size.Height / 2.0);
+
+                Move(_Buttons[ButtonType.icon], (int)Math.Round(posX), (int)Math.Round(posY)); // update icon location
                 if (_Model.Properties.IsFolder)
                 {
                     // posX = posX + _Model.Properties.Icon.Size.Width - 4;

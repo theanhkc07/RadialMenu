@@ -11,6 +11,8 @@ using RadialMenuPlugin.Controls.Buttons.MenuButton;
 using RadialMenuPlugin.Controls.ContextMenu.MenuButton;
 using RadialMenuPlugin.Controls.Buttons.Shaped.Base;
 using RadialMenuPlugin.Controls.Buttons.Shaped.Form.Center;
+using SysDrawing = System.Drawing;
+using SysDrawing2D = System.Drawing.Drawing2D;
 
 namespace RadialMenuPlugin.Controls
 {
@@ -19,6 +21,60 @@ namespace RadialMenuPlugin.Controls
         public static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
         #region Public properties
+        private void _UpdateWindowRegion()
+        {
+            if (Rhino.Runtime.HostUtils.RunningOnWindows)
+            {
+                try
+                {
+                    var centerX = Size.Width / 2;
+                    var centerY = Size.Height / 2;
+
+                    var region = new SysDrawing.Region(new SysDrawing.Rectangle(0, 0, 0, 0));
+                    region.MakeEmpty();
+
+                    // 1. Center button
+                    // The center button is positioned at (centerX - width/2, centerY - height/2)
+                    var centerBtnRect = new SysDrawing.Rectangle(
+                        centerX - _CenterMenuButton.Size.Width / 2,
+                        centerY - _CenterMenuButton.Size.Height / 2,
+                        _CenterMenuButton.Size.Width,
+                        _CenterMenuButton.Size.Height
+                    );
+
+                    using (var path = new SysDrawing2D.GraphicsPath())
+                    {
+                        path.AddEllipse(centerBtnRect);
+                        region.Union(path);
+                    }
+
+                    // 2. Levels (Rings)
+                    foreach (var level in _Levels)
+                    {
+                        var inner = level.InnerRadius;
+                        var outer = level.InnerRadius + level.Thickness;
+
+                        using (var pathOuter = new SysDrawing2D.GraphicsPath())
+                        using (var pathInner = new SysDrawing2D.GraphicsPath())
+                        {
+                            pathOuter.AddEllipse(centerX - outer, centerY - outer, outer * 2, outer * 2);
+                            pathInner.AddEllipse(centerX - inner, centerY - inner, inner * 2, inner * 2);
+
+                            var ringRegion = new SysDrawing.Region(pathOuter);
+                            ringRegion.Exclude(pathInner);
+                            region.Union(ringRegion);
+                        }
+                    }
+
+                    dynamic native = this.NativeHandle;
+                    native.Region = region;
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error(ex, "Failed to set window region");
+                }
+            }
+        }
         #endregion
 
         #region Protected/Private properties
@@ -99,6 +155,7 @@ namespace RadialMenuPlugin.Controls
             // Ensure when form is shown that we display only first menu level
             Shown += (o, e) =>
             {
+                _UpdateWindowRegion();
                 foreach (var ctrl in _Controls.Values)
                 {
                     ctrl.Show(false); // Hide and reset radial control enable and selection
