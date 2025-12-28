@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using Eto.Drawing;
 using Eto.Forms;
@@ -12,20 +11,20 @@ using RadialMenuPlugin.Utilities.Events;
 
 namespace RadialMenuPlugin.Controls
 {
-    #region Event Handler and Args classes
-    using DragDropEventHandler = AppEventHandler<RadialMenuControl, ButtonDragDropEventArgs>; // Drag/Drop event delegate type
+    #region Lớp xử lý sự kiện và tham số
+    using DragDropEventHandler = AppEventHandler<RadialMenuControl, ButtonDragDropEventArgs>; // Delegate cho sự kiện Kéo/Thả
     using MouseEventHandler = AppEventHandler<RadialMenuControl, ButtonMouseEventArgs>;
     /// <summary>
-    /// 
+    /// Tham số sự kiện kéo thả nút
     /// </summary>
     public class ButtonDragDropEventArgs
     {
         /// <summary>
-        /// Source object (should be either MenuButton or RhinoToolbarItem)
+        /// Đối tượng nguồn (có thể là MenuButton hoặc RhinoToolbarItem)
         /// </summary>
         public DragEventArgs DragEventSourceArgs;
         /// <summary>
-        /// Data model of drop target
+        /// Model dữ liệu của đích thả
         /// </summary>
         public Model TargetModel;
         public ButtonDragDropEventArgs(DragEventArgs dragevent, Model target)
@@ -35,7 +34,7 @@ namespace RadialMenuPlugin.Controls
         }
     }
     /// <summary>
-    /// 
+    /// Tham số sự kiện lựa chọn
     /// </summary>
     public struct SelectionEventArgs
     {
@@ -50,23 +49,23 @@ namespace RadialMenuPlugin.Controls
         }
     }
     /// <summary>
-    /// 
+    /// Tham số sự kiện chuột trên nút
     /// </summary>
     public struct ButtonMouseEventArgs
     {
         /// <summary>
-        /// Mouse event from original sender (button)
+        /// Sự kiện chuột từ người gửi ban đầu (nút)
         /// </summary>
         public MouseEventArgs MouseEventArgs;
         /// <summary>
-        /// Screen location of click event
+        /// Vị trí trên màn hình của sự kiện click
         /// <para>
-        /// REMARK: When mouse event is triggered, location is in Control coordinates. But it is usefull to have screen location of click event, i.e. To display something not related to control)
+        /// LƯU Ý: Khi sự kiện chuột được kích hoạt, vị trí nằm trong tọa độ Control. Nhưng rất hữu ích khi có vị trí màn hình của sự kiện click, ví dụ: Để hiển thị thứ gì đó không liên quan đến control
         /// </para>
         /// </summary>
         public Point ScreenLocation;
         /// <summary>
-        /// Model associated to the button
+        /// Model liên kết với nút
         /// </summary>
         public Model Model;
         public ButtonMouseEventArgs(MouseEventArgs mouseEventArgs, Point screenlocation, Model model)
@@ -78,17 +77,17 @@ namespace RadialMenuPlugin.Controls
     }
     #endregion
     /// <summary>
-    /// PixelLayout object that is responsible of displaying sectors button
+    /// Đối tượng PixelLayout chịu trách nhiệm hiển thị nút sector
     /// <para>
-    /// WARN: DO NOT USE "VISIBLE" property -> It prevents layout control "NSTrackingArea" to be updated when controls size changes
-    /// Instead, we use "AlphaValue" to show/hide this control
+    /// CẢNH BÁO: KHÔNG DÙNG thuộc tính "VISIBLE" -> Nó ngăn control layout "NSTrackingArea" cập nhật khi kích thước control thay đổi
+    /// Thay vào đó, dùng "AlphaValue" để hiện/ẩn control này
     /// </para>
     /// </summary>
     public class RadialMenuControl : PixelLayout
     {
         public static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-        #region Events declaration
+        #region Khai báo sự kiện
         public event MouseEventHandler MouseEnterButton;
         public event MouseEventHandler MouseMoveButton;
         public event MouseEventHandler MouseLeaveButton;
@@ -101,7 +100,7 @@ namespace RadialMenuPlugin.Controls
         public event MouseEventHandler ButtonContextMenu;
         #endregion
 
-        #region Public properties
+        #region Thuộc tính công khai
         public RadialMenuLevel Level;
         public bool IsVisible
         {
@@ -128,51 +127,49 @@ namespace RadialMenuPlugin.Controls
                         if (btn != null)
                         {
                             btn.States.IsSelected = true;
-                            _ClearSelection(_SelectedButtonID); // Clear selection of others buttons
+                            _ClearSelection(_SelectedButtonID); // Xóa lựa chọn của các nút khác
                         }
                     }
-                    else // if no selection, clear all button selection state
+                    else // nếu không có lựa chọn, xóa trạng thái lựa chọn của tất cả nút
                     {
                         _ClearSelection();
                     }
 
-                    // Raise "selectionChanged" if selection changed
+                    // Kích hoạt "selectionChanged" nếu lựa chọn thay đổi
                     if (raiseEvent)
                     {
-                        // SelectionArgs args = buildSelectionEventArgs(btn);
-                        // onSelectionChanged?.Invoke(this, args);
+                        // TODO: Triển khai sự kiện thay đổi lựa chọn nếu cần
                     }
                 }
             }
         }
         #endregion
 
-        #region Protected/Private properties
+        #region Thuộc tính Bảo vệ/Riêng tư
         /// <summary>
-        /// Associate a button with model
+        /// Liên kết nút với model
         /// </summary>
         protected Dictionary<MenuButton, Model> _Buttons = new Dictionary<MenuButton, Model>();
         /// <summary>
-        /// Associate a button with sector data images
+        /// Liên kết nút với hình ảnh dữ liệu sector
         /// </summary>
         protected Dictionary<MenuButton, SectorData> _ButtonsImages = new Dictionary<MenuButton, SectorData>();
         /// <summary>
-        /// The current selected button ID
+        /// ID nút được chọn hiện tại
         /// </summary>
         protected string _SelectedButtonID;
         /// <summary>
-        /// Current button ID mouse's over
+        /// ID nút chuột đang trỏ vào
         /// <para>
-        /// HACK: Mouse enter/leave can be in not order (e.g "leave" button #1 triggers after "enter" button #2). This property allow us to ensure a leave event match the current "mouse over" button
+        /// HACK: Sự kiện chuột enter/leave có thể không theo thứ tự (ví dụ "leave" nút #1 kích hoạt sau "enter" nút #2). Thuộc tính này cho phép chúng ta đảm bảo sự kiện leave khớp với nút "mouse over" hiện tại
         /// </para>
         /// </summary>
         protected string _HoverButtonID;
         #endregion
 
-        #region Animations
-        protected double _AnimationDuration = 0.3;
+        #region Hoạt hình (Animations)
         /// <summary>
-        /// Animate show and hide effect
+        /// Hiệu ứng hiện và ẩn
         /// </summary>
         /// <param name="show"></param>
         protected void _AnimateShowHideEffect(bool show = true)
@@ -181,27 +178,25 @@ namespace RadialMenuPlugin.Controls
         }
         #endregion
 
-        #region Public methods
+        #region Phương thức công khai
         /// <summary>
-        /// Constructor
+        /// Hàm khởi tạo
         /// </summary>
         /// <param name="level"></param>
         public RadialMenuControl(RadialMenuLevel level) : base()
         {
-            // DEBUG Method measure
-            var w = Stopwatch.StartNew();
             Level = level;
             Size = new Size((level.InnerRadius + level.Thickness) * 2, (level.InnerRadius + level.Thickness) * 2);
             var sectors = _BuildSectors();
 
-            // Init empty sectorArcButtons
+            // Khởi tạo các nút sectorArc rỗng
             for (var i = 0; i < level.SectorsNumber; i++)
             {
                 var sector = sectors[i];
-                // Initialize button
+                // Khởi tạo nút
                 var btn = new MenuButton();
                 btn.ID = i.ToString();
-                btn.SectorData = sector; // Button images
+                btn.SectorData = sector; // Hình ảnh nút
 
                 btn.OnButtonMouseEnter += _OnMouseEnter;
                 btn.OnButtonMouseMove += _OnMouseMove;
@@ -217,17 +212,14 @@ namespace RadialMenuPlugin.Controls
 
                 btn.OnButtonContextMenu += _OnButtonContextMenu;
 
-                _Buttons.Add(btn, null); // Update button dictionary
-                _ButtonsImages.Add(btn, sector); // Store images for this button
-                Add(btn, (int)sector.Bounds.X, (int)sector.Bounds.Y); // Add button to layout
+                _Buttons.Add(btn, null); // Cập nhật từ điển nút
+                _ButtonsImages.Add(btn, sector); // Lưu hình ảnh cho nút này
+                Add(btn, (int)Math.Floor(sector.Bounds.X), (int)Math.Floor(sector.Bounds.Y)); // Thêm nút vào layout
             }
             Visible = true;
-            //DEBUG Method measure
-            w.Stop();
-            Logger.Debug($"SectorArcRadialControl constructor takes {w.ElapsedMilliseconds}");
         }
         /// <summary>
-        /// 
+        /// Chuyển đổi chế độ chỉnh sửa
         /// </summary>
         /// <param name="editMode"></param>
         public void SwitchEditMode(bool editMode)
@@ -241,7 +233,7 @@ namespace RadialMenuPlugin.Controls
             }
         }
         /// <summary>
-        /// Get models currently associated to control buttons
+        /// Lấy các model hiện đang liên kết với các nút control
         /// </summary>
         /// <param name="buttonID"></param>
         /// <returns></returns>
@@ -271,38 +263,37 @@ namespace RadialMenuPlugin.Controls
             {
                 Logger.Error(e, $"SectorArcRadialControl set button {buttonID} properties error");
             }
-            finally { }
         }
         public void Show(bool show = true)
         {
-            if (!show) // When hidding, reset button state (selected and enabled)
+            if (!show) // Khi ẩn, đặt lại trạng thái nút (đã chọn và đã bật)
             {
-                _ClearSelection(); // when control shows, reset all button selected to false
-                _EnableButtons(); // When control is hidden, reset selection and enable children
+                _ClearSelection(); // khi control hiện, đặt lại tất cả nút đã chọn thành false
+                _EnableButtons(); // Khi control ẩn, đặt lại lựa chọn và bật các nút con
             }
-            _SetChildrenVisibleState(show); // Update children sector button visible state to prevent unwanted "onMouseOver" events
-            _AnimateShowHideEffect(show); // Animate effects
+            _SetChildrenVisibleState(show); // Cập nhật trạng thái hiển thị nút sector con để ngăn sự kiện "onMouseOver" không mong muốn
+            _AnimateShowHideEffect(show); // Hiệu ứng hoạt hình
         }
 
         /// <summary>
-        /// Activate or deactivate all buttons except the one selected
-        /// If no button is selected, enable all buttons
+        /// Kích hoạt hoặc vô hiệu hóa tất cả các nút ngoại trừ nút được chọn
+        /// Nếu không có nút nào được chọn, bật tất cả các nút
         /// </summary>
         /// <param name="buttonID"></param>
         public void DisableButtonsExceptSelection()
         {
-            if (SelectedButtonID == "") // If no selection active, enable all buttons
+            if (SelectedButtonID == "") // Nếu không có lựa chọn nào kích hoạt, bật tất cả các nút
             {
                 _EnableButtons();
             }
-            else // If a button is selected, disable all others buttons
+            else // Nếu một nút được chọn, vô hiệu hóa tất cả các nút khác
             {
                 _DisableButtonsExcept(SelectedButtonID);
             }
         }
 
         /// <summary>
-        /// Do the control contains the provided button
+        /// Control có chứa nút được cung cấp không
         /// </summary>
         /// <param name="btn"></param>
         /// <returns></returns>
@@ -312,30 +303,30 @@ namespace RadialMenuPlugin.Controls
         }
 
         /// <summary>
-        /// Display list of buttons for the specified ID (i.e. ID is the ID of the previous level button that trigger opening the menu)
+        /// Hiển thị danh sách các nút cho ID được chỉ định (tức là ID của nút cấp trước đó kích hoạt mở menu)
         /// </summary>
         /// <param name="forButtonID"></param>
         public void SetMenuForButtonID(Model parent = null)
         {
-            SelectedButtonID = ""; // As we build new layout, unselect any button
+            SelectedButtonID = ""; // Vì chúng ta xây dựng layout mới, bỏ chọn bất kỳ nút nào
 
-            // Iterate on each sector data to update button
+            // Duyệt qua từng dữ liệu sector để cập nhật nút
             foreach (MenuButton button in _Buttons.Keys)
             {
-                button.Unbind(); // Unbind any bindings
+                button.Unbind(); // Hủy liên kết bất kỳ binding nào
                 var model = ModelController.Instance.Find(button.ID, parent, true);
-                _Buttons[button] = model; // update model
-                button.ButtonModelBinding.Bind(_Buttons, bntCollection => bntCollection[button].Data); // Bind button model
-                button.ID = model.Data.ButtonID; // Update button ID
+                _Buttons[button] = model; // cập nhật model
+                button.ButtonModelBinding.Bind(_Buttons, bntCollection => bntCollection[button].Data); // Bind model nút
+                button.ID = model.Data.ButtonID; // Cập nhật ID nút
 
             }
         }
         #endregion
 
-        #region Protected/Private methods
+        #region Phương thức Bảo vệ/Riêng tư
         /// <summary>
-        /// Disable all buttons except the one specified
-        /// <para>Use this method when a button opens a folder</para>
+        /// Vô hiệu hóa tất cả các nút ngoại trừ nút được chỉ định
+        /// <para>Sử dụng phương thức này khi một nút mở thư mục</para>
         /// </summary>
         /// <param name="buttonID"></param>
         protected void _DisableButtonsExcept(string buttonID)
@@ -347,7 +338,7 @@ namespace RadialMenuPlugin.Controls
         }
 
         /// <summary>
-        /// Enable all control buttons
+        /// Bật tất cả các nút control
         /// </summary>
         protected void _EnableButtons()
         {
@@ -358,13 +349,13 @@ namespace RadialMenuPlugin.Controls
         }
 
         /// <summary>
-        /// Reset all selected buttons
+        /// Đặt lại tất cả các nút đã chọn
         /// </summary>
         protected void _ClearSelection(string exceptButtonID = "")
         {
             foreach (var btn in _Buttons.Keys)
             {
-                if (exceptButtonID != "") // Check if we have a button to not clear selection
+                if (exceptButtonID != "") // Kiểm tra xem có nút nào không nên xóa lựa chọn
                 {
                     if (_Buttons[btn].Data.ButtonID != exceptButtonID) btn.States.IsSelected = false;
                 }
@@ -376,37 +367,37 @@ namespace RadialMenuPlugin.Controls
             }
         }
         /// <summary>
-        /// Build new sectors data
+        /// Xây dựng dữ liệu sector mới
         /// </summary>
         /// <param name="sectorsNumber"></param>
         /// <param name="startAngle"></param>
         /// <returns></returns>
         protected List<SectorData> _BuildSectors()
         {
-            int angleStart;
+            float angleStart;
             List<SectorData> sectors = new List<SectorData>();
 
             var sectorDrawer = new ArcSectorDrawer();
-            var sweepAngle = 360 / Level.SectorsNumber;
+            var sweepAngle = 360f / Level.SectorsNumber;
 
             for (int i = 0; i < Level.SectorsNumber; i++)
             {
-                // compute angle. If > 360, reset to 0
+                // tính góc. Nếu > 360, đặt lại về 0
                 angleStart = Level.StartAngle + (i * sweepAngle);
                 if (angleStart > 360) Level.StartAngle -= 360;
 
-                // Draw one sector
+                // Vẽ một sector
 
                 var sectorData = sectorDrawer.CreateSectorImages(Size.Width / 2, Size.Height / 2, Level, angleStart, sweepAngle);
 
-                // add sector infos to list
+                // thêm thông tin sector vào danh sách
                 sectors.Add(sectorData);
             }
             return sectors;
         }
 
         /// <summary>
-        /// Hide/Show buttons
+        /// Ẩn/Hiện nút
         /// </summary>
         /// <param name="show"></param>
         protected void _SetChildrenVisibleState(bool show)
@@ -418,9 +409,9 @@ namespace RadialMenuPlugin.Controls
         }
         #endregion
 
-        #region Button event handlers
+        #region Xử lý sự kiện nút
         /// <summary>
-        /// 
+        /// Xử lý sự kiện chuột vào nút
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
@@ -430,7 +421,7 @@ namespace RadialMenuPlugin.Controls
             _RaiseEvent(MouseEnterButton, new ButtonMouseEventArgs(e, new Point(sender.PointToScreen(e.Location)), _Buttons[sender]));
         }
         /// <summary>
-        /// 
+        /// Xử lý sự kiện chuột di chuyển trên nút
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
@@ -439,15 +430,15 @@ namespace RadialMenuPlugin.Controls
             _RaiseEvent(MouseMoveButton, new ButtonMouseEventArgs(e, new Point(sender.PointToScreen(e.Location)), _Buttons[sender]));
         }
         /// <summary>
-        /// 
+        /// Xử lý sự kiện chuột rời khỏi nút
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
         protected void _OnMouseLeave(MenuButton sender, MouseEventArgs e)
         {
-            /// HACK: Prevent raising "leave" event of another button than the one currently "hover"
-            /// If we move the mouse quickly from a button to another one, the "leave" event triggers AFTER the "enter" event
-            /// It is buggy for example to update and display tooltip <seealso cref="RadialMenuForm"/>
+            /// HACK: Ngăn kích hoạt sự kiện "leave" của nút khác với nút đang "hover"
+            /// Nếu di chuyển chuột nhanh từ nút này sang nút khác, sự kiện "leave" kích hoạt SAU sự kiện "enter"
+            /// Điều này gây lỗi ví dụ như cập nhật và hiển thị tooltip <seealso cref="RadialMenuForm"/>
             if (sender.ID != _HoverButtonID)
             {
                 Logger.Debug($"Mouse leave not triggered");
@@ -459,7 +450,7 @@ namespace RadialMenuPlugin.Controls
             }
         }
         /// <summary>
-        /// 
+        /// Xử lý sự kiện click chuột
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
@@ -468,7 +459,7 @@ namespace RadialMenuPlugin.Controls
             _RaiseEvent(MouseClickButton, new ButtonMouseEventArgs(e, new Point(sender.PointToScreen(e.Location)), _Buttons[sender]));
         }
         /// <summary>
-        /// 
+        /// Xử lý sự kiện kéo thả vào nút
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
@@ -477,7 +468,7 @@ namespace RadialMenuPlugin.Controls
             _RaiseEvent(DragDropEnterButton, new ButtonDragDropEventArgs(e, _Buttons[sender]));
         }
         /// <summary>
-        /// 
+        /// Xử lý sự kiện kéo qua nút
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
@@ -486,7 +477,7 @@ namespace RadialMenuPlugin.Controls
             _RaiseEvent(DragDropOverButton, new ButtonDragDropEventArgs(e, _Buttons[sender]));
         }
         /// <summary>
-        /// 
+        /// Xử lý sự kiện kéo rời khỏi nút
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
@@ -495,7 +486,7 @@ namespace RadialMenuPlugin.Controls
             _RaiseEvent(DragDropLeaveButton, new ButtonDragDropEventArgs(e, _Buttons[sender]));
         }
         /// <summary>
-        /// 
+        /// Xử lý sự kiện thả vào nút
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
@@ -504,7 +495,7 @@ namespace RadialMenuPlugin.Controls
             _RaiseEvent(DragDropButton, new ButtonDragDropEventArgs(e, _Buttons[sender]));
         }
         /// <summary>
-        /// 
+        /// Xử lý bắt đầu kéo nút
         /// </summary>
         /// <param name="sender"></param>
         protected void _OnDoDragStart(MenuButton sender)
@@ -514,8 +505,8 @@ namespace RadialMenuPlugin.Controls
             sender.DoDragDrop(eventObj, DragEffects.All, _Buttons[sender].Data.Properties.Icon, new PointF(10, 10));
         }
         /// <summary>
-        /// Handler when button drag ended and no drop target has accepted icon
-        /// <para>This means dragged icon was drop anywhere an so should be removed</para>
+        /// Xử lý khi kéo nút kết thúc và không có đích thả nào chấp nhận icon
+        /// <para>Điều này có nghĩa là icon được kéo thả ở bất cứ đâu nên cần bị xóa</para>
         /// </summary>
         /// <param name="sender"></param>
         protected void _OnDoDragEnd(MenuButton sender, DragEventArgs eventArgs)
@@ -523,19 +514,21 @@ namespace RadialMenuPlugin.Controls
             _RaiseEvent(RemoveButton, new ButtonDragDropEventArgs(eventArgs, _Buttons[(sender)]));
         }
         /// <summary>
-        /// 
+        /// Xử lý sự kiện menu ngữ cảnh của nút
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
         protected void _OnButtonContextMenu(MenuButton sender, MouseEventArgs e)
         {
             var model = _Buttons[sender];
-            var location = sender.PointToScreen(e.Location); // convert location to screen coordinates
+            if (model == null) return; // Ngăn crash nếu model là null
+
+            var location = sender.PointToScreen(e.Location); // chuyển đổi vị trí sang tọa độ màn hình
 
             _RaiseEvent(ButtonContextMenu, new ButtonMouseEventArgs(e, new Point(location), model));
         }
         /// <summary>
-        /// 
+        /// Kích hoạt sự kiện (helper)
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <typeparam name="EVENT"></typeparam>

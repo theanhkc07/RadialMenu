@@ -165,6 +165,18 @@ namespace RadialMenuPlugin.Controls.ContextMenu.Base
         {
             return true;
         }
+
+        /// <summary>
+        /// Override OnClosing to just hide the form instead of closing/disposing it, 
+        /// allowing reuse of the same instance.
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnClosing(CancelEventArgs e)
+        {
+            e.Cancel = true;
+            Visible = false;
+            base.OnClosing(e);
+        }
         #endregion
     }
 }

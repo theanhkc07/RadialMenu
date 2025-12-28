@@ -6,7 +6,7 @@ using Eto.Forms;
 namespace RadialMenuPlugin.Data
 {
     /// <summary>
-    /// Class to convert Rhino keyboard "key" (int) value to ETO Keys value
+    /// Lớp chuyển đổi giá trị "phím" (int) của Rhino sang giá trị ETO Keys
     /// </summary>
     public static class RhinoKeyToEto
     {
@@ -55,45 +55,45 @@ namespace RadialMenuPlugin.Data
     }
 
     /// <summary>
-    /// Menu level class
+    /// Lớp cấp menu
     /// </summary>
     public class RadialMenuLevel
     {
         /// <summary>
-        /// Level number
+        /// Số thứ tự cấp
         /// </summary>
         public int Level;
 
         /// <summary>
-        /// Inner radius of level
+        /// Bán kính trong của cấp
         /// </summary>
         public int InnerRadius;
 
         /// <summary>
-        /// Sector thickness fro drawing this level
+        /// Độ dày sector để vẽ cấp này
         /// </summary>
         public int Thickness;
 
         /// <summary>
-        /// Start angle for this level
+        /// Góc bắt đầu cho cấp này
         /// </summary>
-        public int StartAngle;
+        public float StartAngle;
 
         /// <summary>
-        /// # of sectors for this level
+        /// Số lượng sector cho cấp này
         /// </summary>
         public int SectorsNumber;
 
 
         /// <summary>
-        /// Constructor
+        /// Hàm khởi tạo
         /// </summary>
         /// <param name="level"></param>
         /// <param name="innerRadius"></param>
         /// <param name="thickness"></param>
         /// <param name="startAngle"></param>
         /// <param name="sectorsNumber"></param>
-        public RadialMenuLevel(int level, int innerRadius, int thickness = 30, int startAngle = 0, int sectorsNumber = 8)
+        public RadialMenuLevel(int level, int innerRadius, int thickness = 30, float startAngle = 0, int sectorsNumber = 8)
         {
             Level = level; InnerRadius = innerRadius;
             Thickness = thickness; StartAngle = startAngle;
@@ -124,31 +124,31 @@ namespace RadialMenuPlugin.Data
         public Image DisabledStateImage;
         public Image SelectedStateImage;
         public Image dragStateImage;
-        // Mask image to detect if a point is hover a sector image
+        // Hình ảnh mặt nạ để phát hiện xem một điểm có nằm trên hình ảnh sector hay không
         public Bitmap SectorMask;
     }
     public class SectorData
     {
         /// <summary>
-        /// Size of the sector image
+        /// Kích thước của hình ảnh sector
         /// </summary>
         public Size Size;
 
         /// <summary>
-        /// Sector arc bounds in real coordinates, i.e Parent coordinates and/or in real enclosing circle (based on inner Radius)
-        /// Usefull to set icon location in enclosing control (form for example)
+        /// Giới hạn cung sector trong tọa độ thực, tức là tọa độ Parent và/hoặc trong vòng tròn bao quanh thực (dựa trên Bán kính trong)
+        /// Hữu ích để đặt vị trí icon trong control bao quanh (ví dụ: form)
         /// </summary>
         public RectangleF Bounds;
 
-        // Center of the arc in "real" coordinates
+        // Tâm của cung trong tọa độ "thực"
         public Point ArcCenter;
-        public int StartAngle;
-        public int SweepAngle;
+        public float StartAngle;
+        public float SweepAngle;
         public int InnerRadius = 50;
         public int Thickness = 30;
 
         /// <summary>
-        /// State images
+        /// Hình ảnh trạng thái
         /// </summary>
         public ButtonStateImages Images;
 
@@ -156,7 +156,7 @@ namespace RadialMenuPlugin.Data
         #endregion
 
         /// <summary>
-        /// Center of the sector in world coordinates (usefull to place icon in sector button) 
+        /// Tâm của sector trong tọa độ thế giới (hữu ích để đặt icon trong nút sector) 
         /// </summary>
         public PointF SectorCenter()
         {
@@ -167,12 +167,12 @@ namespace RadialMenuPlugin.Data
             return new PointF(X, Y);
         }
         /// <summary>
-        /// Get a point in the sector
+        /// Lấy một điểm trong sector
         /// </summary>
         /// <param name="angleFromStart">Angle from start angle of sector</param>
         /// <param name="radiusFromInner">Radius from inner radius</param>
         /// <returns></returns>
-        public PointF GetPoint(int angleFromStart, int radiusFromInner)
+        public PointF GetPoint(float angleFromStart, int radiusFromInner)
         {
             var atAngle = StartAngle + angleFromStart;
             var atRadius = InnerRadius + radiusFromInner;
@@ -180,7 +180,7 @@ namespace RadialMenuPlugin.Data
             float Y = (float)(ArcCenter.Y + atRadius * Math.Sin(atAngle * (Math.PI / 180)));
             return new PointF(X, Y);
         }
-        public int EndAngle { get { return StartAngle + SweepAngle; } }
+        public float EndAngle { get { return StartAngle + SweepAngle; } }
 
         public SectorData() { }
         public SectorData(RadialMenuLevel level)
@@ -190,7 +190,7 @@ namespace RadialMenuPlugin.Data
         }
 
         /// <summary>
-        /// Convert a local location (i.e. control coordinates) to world arc coordinates (because a control only displays the arc and not the whole circle)
+        /// Chuyển đổi vị trí cục bộ (tức là tọa độ control) sang tọa độ cung thế giới (vì control chỉ hiển thị cung chứ không phải toàn bộ vòng tròn)
         /// </summary>
         /// <param name="localLocation"></param>
         /// <returns></returns>
@@ -213,40 +213,40 @@ namespace RadialMenuPlugin.Data
             return new PointF(worldX, worldY);
         }
         /// <summary>
-        /// <para>Check if a Point is in the arc shape</para>
-        /// <para>IMPORTANT: Point should be in control local coordinates.</para>
+        /// <para>Kiểm tra xem một Điểm có nằm trong hình dạng cung không</para>
+        /// <para>QUAN TRỌNG: Điểm phải nằm trong tọa độ cục bộ của control.</para>
         /// </summary>
         /// <param name="location">Local control coordinates</param>
         /// <returns></returns>
         public bool IsPointInShape(PointF location)
         {
-            // Use mathematical hit testing (Atan2) instead of bitmap mask for better accuracy and to avoid DPI/AntiAlias issues
-            // 1. Convert local location (relative to Bounds/Control) to World location (relative to ArcCenter)
+            // Sử dụng kiểm tra va chạm toán học (Atan2) thay vì mặt nạ bitmap để có độ chính xác tốt hơn và tránh các vấn đề về DPI/AntiAlias
+            // 1. Chuyển đổi vị trí cục bộ (tương đối với Bounds/Control) sang vị trí Thế giới (tương đối với ArcCenter)
             var worldLocation = ConvertLocalToWorld(location);
 
-            // 2. Calculate distance from center (Radius check)
+            // 2. Tính khoảng cách từ tâm (Kiểm tra Bán kính)
             var dx = worldLocation.X - ArcCenter.X;
             var dy = worldLocation.Y - ArcCenter.Y;
             var dist = Math.Sqrt(dx * dx + dy * dy);
 
             var outerRadius = InnerRadius + Thickness;
-            // Add epsilon for floating point precision
+            // Thêm epsilon cho độ chính xác số thực
             if (dist < InnerRadius - 0.1 || dist > outerRadius + 0.1) return false;
 
-            // 3. Calculate Angle
+            // 3. Tính góc
             var angleRad = Math.Atan2(dy, dx); // -PI to PI
             var angleDeg = angleRad * (180.0 / Math.PI);
             
-            // Normalize angle to [0, 360]
+            // Chuẩn hóa góc về [0, 360]
             if (angleDeg < 0) angleDeg += 360.0;
 
-            // Normalize StartAngle and EndAngle to handle wrapping (e.g. Start 350, Sweep 20 -> End 10)
-            // It's easier to rotate the angle so StartAngle becomes 0
+            // Chuẩn hóa StartAngle và EndAngle để xử lý bao bọc (ví dụ: Start 350, Sweep 20 -> End 10)
+            // Dễ dàng hơn khi xoay góc để StartAngle trở thành 0
             var relativeAngle = angleDeg - StartAngle;
             while (relativeAngle < -0.001) relativeAngle += 360.0;
             while (relativeAngle >= 360.0 - 0.001) relativeAngle -= 360.0;
 
-            // Check if angle is within sweep
+            // Kiểm tra xem góc có nằm trong vùng quét không
             return relativeAngle <= SweepAngle + 0.001;
         }
     }

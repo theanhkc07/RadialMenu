@@ -9,81 +9,81 @@ using RadialMenuPlugin.Utilities.Events;
 namespace RadialMenuPlugin.Controls.Buttons.MenuButton
 {
     #region Event Handler and Args classes
-    using DragDropHandler = AppEventHandler<MenuButton, DragEventArgs>; // Used for dragdrop events
-    using DragDropStartHandler = AppEventHandler<MenuButton>; // Used for DoDrag start event
-    using MouseEventHandler = AppEventHandler<MenuButton, MouseEventArgs>; // Used for mouse events
+    /// <summary>
+    /// Các lớp xử lý sự kiện và tham số
+    /// </summary>
+    using DragDropHandler = AppEventHandler<MenuButton, DragEventArgs>; // Dùng cho sự kiện kéo thả
+    using DragDropStartHandler = AppEventHandler<MenuButton>; // Dùng cho sự kiện bắt đầu kéo
+    using MouseEventHandler = AppEventHandler<MenuButton, MouseEventArgs>; // Dùng cho sự kiện chuột
 
     /// <summary>
-    /// 
+    /// Tham số cho mục tiêu thả (Drop Target)
     /// </summary>
     public class DropTargetArgs : DragEventArgs
     {
         /// <summary>
-        /// 
+        /// Chấp nhận thả hay không
         /// </summary>
         public bool acceptTarget = true;
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="d"></param>
+        
         public DropTargetArgs(DragEventArgs d) : base(d.Source, d.Data, d.AllowedEffects, d.Location, d.Modifiers, d.Buttons, d.ControlObject)
         { }
     }
     #endregion
 
     /// <summary>
-    /// Menu button class
+    /// Lớp nút menu (Menu Button)
     /// </summary>
     public class MenuButton : PixelLayout
     {
-        #region Events declaration
+        #region Khai báo sự kiện
         /// <summary>
-        /// Button click event
+        /// Sự kiện click vào nút
         /// </summary>
         public event MouseEventHandler OnButtonClickEvent;
         /// <summary>
-        /// Event to notify an icon has been added to button
+        /// Sự kiện khi một icon được thả vào nút
         /// </summary>
         public event DragDropHandler OnButtonDragDrop;
         /// <summary>
-        /// Event to notify an icon has been added to button
+        /// Sự kiện khi kéo vào vùng nút
         /// </summary>
         public event DragDropHandler OnButtonDragEnter;
         /// <summary>
-        /// Event to notify an icon has been added to button
+        /// Sự kiện khi kéo qua vùng nút
         /// </summary>
         public event DragDropHandler OnButtonDragOver;
         /// <summary>
-        /// Event to notify an icon has been added to button
+        /// Sự kiện khi kéo rời khỏi vùng nút
         /// </summary>
         public event DragDropHandler OnButtonDragLeave;
         /// <summary>
-        /// Event to notify to start button icon drag
+        /// Sự kiện bắt đầu kéo icon của nút
         /// </summary>
         public event DragDropStartHandler OnButtonDragDropStart;
         /// <summary>
-        /// Event to notify button icon drag ended
+        /// Sự kiện kết thúc kéo icon của nút
         /// </summary>
         public event DragDropHandler OnButtonDragDropEnd;
         /// <summary>
-        /// Event to notify mouse is over button
+        /// Sự kiện chuột di chuyển trên nút
         /// </summary>
         public event MouseEventHandler OnButtonMouseMove;
         /// <summary>
-        /// Event to notify mouse leaves a button
+        /// Sự kiện chuột rời khỏi nút
         /// </summary>
         public event MouseEventHandler OnButtonMouseLeave;
         /// <summary>
-        /// Event to notify mouse enters a button
+        /// Sự kiện chuột đi vào nút
         /// </summary>
         public event MouseEventHandler OnButtonMouseEnter;
         /// <summary>
-        /// Event to notify button request showing context menu
+        /// Sự kiện yêu cầu hiển thị menu ngữ cảnh (chuột phải)
         /// </summary>
         public event MouseEventHandler OnButtonContextMenu;
         #endregion
 
-        #region Button States
+        #region Trạng thái nút
         public struct ButtonStates : INotifyPropertyChanged
         {
 
@@ -99,8 +99,8 @@ namespace RadialMenuPlugin.Controls.Buttons.MenuButton
             }
 
             /// <summary>
-            /// custom "isVisible" property. We use this because using ETO "Visible" property prevents control to correctly update the NSTrackingArea
-            /// @see https://github.com/picoe/Eto/issues/2704
+            /// Thuộc tính "isVisible" tùy chỉnh. Dùng cái này vì thuộc tính "Visible" của ETO ngăn control cập nhật NSTrackingArea đúng cách
+            /// Xem thêm: https://github.com/picoe/Eto/issues/2704
             /// </summary>
             public bool IsVisible = true;
 
@@ -113,7 +113,7 @@ namespace RadialMenuPlugin.Controls.Buttons.MenuButton
                 get { return _IsHovering; }
                 set
                 {
-                    // Change class property value and notify change 
+                    // Thay đổi giá trị và thông báo thay đổi
                     _IsHovering = value;
                     OnPropertyChanged(nameof(IsHovering));
                 }
@@ -133,7 +133,7 @@ namespace RadialMenuPlugin.Controls.Buttons.MenuButton
                 get { return _IsSelected; }
                 set
                 {
-                    // Change class property value and notify change 
+                    // Thay đổi giá trị và thông báo thay đổi
                     _IsSelected = value;
                     OnPropertyChanged(nameof(IsSelected));
                 }
@@ -143,19 +143,14 @@ namespace RadialMenuPlugin.Controls.Buttons.MenuButton
         }
         #endregion
 
-        #region Button animations
+        #region Hiệu ứng nút
         /// <summary>
-        /// Duration of animations
-        /// </summary>
-        private double _AnimationDuration = 0.5;
-
-        /// <summary>
-        /// Transparency for button disable state
+        /// Độ trong suốt khi nút bị vô hiệu hóa
         /// </summary>
         private float _DisabledAlpha = (float)0.1;
 
         /// <summary>
-        /// Transparency of buttons
+        /// Độ trong suốt của nút
         /// </summary>
         private float _ButtonAlpha = (float)0.4;
 
@@ -222,9 +217,9 @@ namespace RadialMenuPlugin.Controls.Buttons.MenuButton
         }
         #endregion
 
-        #region Button Properties
+        #region Thuộc tính nút (Button Properties)
         /// <summary>
-        /// Custom and override of ID to generate button ID
+        /// Tùy chỉnh và ghi đè ID để tạo ID cho nút
         /// </summary>
         public new string ID
         {
@@ -232,7 +227,7 @@ namespace RadialMenuPlugin.Controls.Buttons.MenuButton
             set
             {
                 base.ID = value;
-                _Model.ButtonID = value;// We need to sets model buttonID to retrieve Plugin settings
+                _Model.ButtonID = value;// Cần đặt buttonID cho model để lấy cài đặt Plugin
             }
         }
 
@@ -268,12 +263,12 @@ namespace RadialMenuPlugin.Controls.Buttons.MenuButton
             }
         }
         /// <summary>
-        /// Drawables used for animating button UI state changes
+        /// Các đối tượng vẽ dùng cho hoạt ảnh thay đổi trạng thái UI nút
         /// </summary>
         private Dictionary<ButtonType, ImageButton> _Buttons = new Dictionary<ButtonType, ImageButton>();
 
         /// <summary>
-        /// Data Model Binding
+        /// Ràng buộc dữ liệu Model
         /// </summary>
         private ButtonModelData _Model = new ButtonModelData();
         public ButtonStates States = new ButtonStates();
@@ -281,24 +276,24 @@ namespace RadialMenuPlugin.Controls.Buttons.MenuButton
         public BindableBinding<MenuButton, ButtonModelData> ButtonModelBinding => new BindableBinding<MenuButton, ButtonModelData>(
             this,
             (MenuButton obj) => obj._Model,
-            // Update "model" property with new value and register a property changed event handler of the "model" object
+            // Cập nhật thuộc tính "model" với giá trị mới và đăng ký bộ xử lý sự kiện thay đổi thuộc tính của đối tượng "model"
             delegate (MenuButton obj, ButtonModelData value)
             {
-                // Remove property changed event handler on current "model" object
+                // Xóa bộ xử lý sự kiện thay đổi thuộc tính trên đối tượng "model" hiện tại
                 _Model.PropertyChanged -= _ModelChangedHandler;
                 _Model.Properties.PropertyChanged -= _ModelChangedHandler;
-                // update property
+                // cập nhật thuộc tính
                 obj._Model = value;
-                // Add property changed handler on "model"
+                // Thêm bộ xử lý sự kiện thay đổi trên "model"
                 _Model.PropertyChanged += _ModelChangedHandler;
                 _Model.Properties.PropertyChanged += _ModelChangedHandler;
                 _UpdateIcon();
                 _UpdateTriggerIcon();
             },
-            // Add change event handler
+            // Thêm bộ xử lý sự kiện thay đổi
             delegate (MenuButton btn, EventHandler<EventArgs> changeEventHandler)
             { },
-            // remove change event handler
+            // xóa bộ xử lý sự kiện thay đổi
             delegate (MenuButton btn, EventHandler<EventArgs> changeEventHandler)
             { });
 
@@ -314,15 +309,15 @@ namespace RadialMenuPlugin.Controls.Buttons.MenuButton
         }
         #endregion
 
-        #region Private Methods
+        #region Phương thức riêng tư (Private Methods)
         private void _InitStatesChangeHandler()
         {
-            // States property change handler
+            // Bộ xử lý thay đổi thuộc tính trạng thái
             States.PropertyChanged += (obj, prop) =>
             {
                 switch (prop.PropertyName)
                 {
-                    case nameof(States.IsSelected): // Animate <selected> property changed
+                    case nameof(States.IsSelected): // Hoạt ảnh thay đổi thuộc tính <selected>
                         _AnimateSelectedEffect();
                         break;
                     case nameof(States.IsEditMode):
@@ -337,27 +332,27 @@ namespace RadialMenuPlugin.Controls.Buttons.MenuButton
             };
         }
         /// <summary>
-        /// Init layout buttons
+        /// Khởi tạo layout các nút
         /// </summary>
         private void _InitButtons()
         {
-            // Create buttons
+            // Tạo các nút
             _Buttons[ButtonType.normal] = new ImageButton();
             _Buttons[ButtonType.over] = new ImageButton();
             _Buttons[ButtonType.disabled] = new ImageButton();
             _Buttons[ButtonType.icon] = new ImageButton();
             _Buttons[ButtonType.selected] = new ImageButton();
             _Buttons[ButtonType.trigger] = new ImageButton();
-            // edit mode image
-            var iconSize = new Size(44, 44);
+            // ảnh chế độ chỉnh sửa (edit mode)
+            var iconSize = new Size(20, 20);
             var img = Bitmap.FromResource("RadialMenu.Bitmaps.dashed-circle.png").WithSize(iconSize);
             _Buttons[ButtonType.editmode] = new ImageButton(img, iconSize);
-            // folder icon image
+            // ảnh icon thư mục
             var folderIconSize = new Size(16, 16);
             var folderIconimg = Bitmap.FromResource("RadialMenu.Bitmaps.plus_icon.png").WithSize(folderIconSize);
             _Buttons[ButtonType.folderIcon] = new ImageButton(folderIconimg, folderIconSize);
 
-            // Add button to layout
+            // Thêm nút vào layout
             Add(_Buttons[ButtonType.normal], 0, 0);
             Add(_Buttons[ButtonType.over], 0, 0);
             Add(_Buttons[ButtonType.disabled], 0, 0);
@@ -374,16 +369,16 @@ namespace RadialMenuPlugin.Controls.Buttons.MenuButton
             _Buttons[ButtonType.editmode].Alpha = 0;
         }
         /// <summary>
-        /// Init event handlers
+        /// Khởi tạo bộ xử lý sự kiện
         /// </summary>
         private void _InitEventHandlers()
         {
-            // Mouse events
+            // Sự kiện chuột
             MouseMove += _MouseMoveHandler;
             MouseLeave += _MouseLeaveHandler;
             MouseDown += _MouseDownHandler;
 
-            // DragDrop events for edit mode
+            // Sự kiện Kéo Thả cho chế độ chỉnh sửa
             AllowDrop = false;
             _Buttons[ButtonType.editmode].AllowDrop = true;
             _Buttons[ButtonType.editmode].DragEnter += _DragEnterHandler;
@@ -392,17 +387,15 @@ namespace RadialMenuPlugin.Controls.Buttons.MenuButton
             _Buttons[ButtonType.editmode].DragDrop += _DragDropHandler;
             DragEnd += (s, e) =>
             {
-                if (e.Effects == DragEffects.None) // No drop target accepted the icon : We should remove the icon
+                if (e.Effects == DragEffects.None) // Không có mục tiêu thả nào chấp nhận icon: Chúng ta nên xóa icon
                 {
                     _RaiseEvent(OnButtonDragDropEnd, e);
                 }
             };
         }
         /// <summary>
-        /// Update button display as soon as a new Model is binded to this class. When occurs, the "model" property has already been updated, so we can use it
-        /// <para>
-        /// REMARK: Don't think we need to optimize props update by checking wich model property is updated. So we systematically update all
-        /// </para>
+        /// Cập nhật hiển thị nút ngay khi một Model mới được bind vào lớp này. 
+        /// Khi xảy ra, thuộc tính "model" đã được cập nhật, nên chúng ta có thể sử dụng nó
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
@@ -414,7 +407,6 @@ namespace RadialMenuPlugin.Controls.Buttons.MenuButton
                 case nameof(ButtonProperties.Icon):
                 case nameof(ButtonProperties.IsActive):
                 case nameof(ButtonProperties.IsFolder):
-                    // _Buttons[_ButtonType.icon].SetImage(_Model.Properties.Icon, _SectorData.Size);
                     _UpdateIcon();
                     _UpdateTriggerIcon();
                     break;
@@ -425,36 +417,35 @@ namespace RadialMenuPlugin.Controls.Buttons.MenuButton
             }
         }
         /// <summary>
-        /// 
+        /// Xử lý sự kiện nhấn chuột
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void _MouseDownHandler(object sender, MouseEventArgs e)
         {
-            if (!States.IsHovering) return; // As buttons can overlap, react only to button that has focus
+            if (!States.IsHovering) return; // Chỉ phản hồi nếu chuột đang nằm trên nút này (do các nút có thể chồng lên nhau)
             switch (e.Buttons)
             {
                 case MouseButtons.Primary:
-                    // We can drag icons with "Control" modifier + LMB => Drag is forbidden if button is a "folder"
-                    // Fix: Use Keys.Control instead of Keys.Application (which is for Mac/Context)
+                    // Chúng ta có thể kéo icon bằng cách nhấn phím Control + Chuột trái => Cấm kéo nếu nút là "folder"
+                    // Fix: Dùng Keys.Control thay vì Keys.Application (dành cho Mac/Context)
                     if (e.Modifiers.HasFlag(Keys.Control))
                     {
                         if (_Model.Properties.IsActive && States.IsEditMode)
                         {
-                            _RaiseEvent(OnButtonDragDropStart); // Raise event to notify dragging start
+                            _RaiseEvent(OnButtonDragDropStart); // Kích hoạt sự kiện thông báo bắt đầu kéo
                         }
                     }
                     else
                     {
-                        if (_Model.Properties.IsActive && !States.IsEditMode) // Command can ONLY be executed when not in edit mode
+                        if (_Model.Properties.IsActive && !States.IsEditMode) // Lệnh CHỈ được thực thi khi KHÔNG ở chế độ chỉnh sửa
                         {
-
                             _RaiseEvent(OnButtonClickEvent, e);
                         }
                     }
                     break;
                 case MouseButtons.Alternate:
-                    // Shows context menu panel in edit mode when right mouse button click
+                    // Hiển thị menu ngữ cảnh trong chế độ chỉnh sửa khi click chuột phải
                     if (States.IsEditMode)
                     {
                         _RaiseEvent(OnButtonContextMenu, e);
@@ -468,8 +459,8 @@ namespace RadialMenuPlugin.Controls.Buttons.MenuButton
             }
         }
         /// <summary>
-        /// Handler for mouse move in control. Note that we check and fire custom mouse "leave", "over" and "enter" events here because
-        /// the shape is not a rectangle. So we want to raise events only for the custom (arc) shape
+        /// Xử lý di chuyển chuột trong control. Lưu ý rằng chúng ta kiểm tra và kích hoạt các sự kiện chuột tùy chỉnh "leave", "over" và "enter" ở đây vì
+        /// hình dạng không phải là hình chữ nhật. Vì vậy chúng ta chỉ muốn kích hoạt sự kiện cho hình dạng tùy chỉnh (cung tròn)
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
@@ -477,25 +468,24 @@ namespace RadialMenuPlugin.Controls.Buttons.MenuButton
         {
             if (States.IsVisible == true)
             {
-                // Ensure main plugin window has focus -> workaround for click event that doesn't work if main window has no focus
-                // If main window has no focus, the click event gives focus to main window and no click event on button occurs
-                // OnButtonRequestFocusEvent?.Invoke(this,e);
+                // Đảm bảo cửa sổ plugin chính có tiêu điểm -> khắc phục sự kiện click không hoạt động nếu cửa sổ chính không có tiêu điểm
+                // Nếu cửa sổ chính không có tiêu điểm, sự kiện click sẽ chuyển tiêu điểm cho cửa sổ chính và không có sự kiện click nào trên nút xảy ra
                 var oldHovering = _MouseMoveUpdate(e);
 
-                if (States.IsHovering) // Mouse overs the button
+                if (States.IsHovering) // Chuột đang ở trên nút
                 {
-                    if (oldHovering) // Mouse was already over the button -> Invoke event mouse over
+                    if (oldHovering) // Chuột đã ở trên nút từ trước -> Kích hoạt sự kiện mouse over
                     {
-                        _RaiseEvent(OnButtonMouseMove, e); // Notify mouse is over the button
+                        _RaiseEvent(OnButtonMouseMove, e); // Thông báo chuột đang ở trên nút
                     }
-                    else // Mouse enters the button
+                    else // Chuột mới đi vào nút
                     {
                         _RaiseEvent(OnButtonMouseEnter, e);
                     }
                 }
-                else // Mouse is not over the button
+                else // Chuột không ở trên nút
                 {
-                    if (oldHovering) // mouse was over the button -> Invoke leave event
+                    if (oldHovering) // chuột đã ở trên nút trước đó -> Kích hoạt sự kiện leave
                     {
                         ToolTip = "";
                         _RaiseEvent(OnButtonMouseLeave, e);
@@ -504,13 +494,13 @@ namespace RadialMenuPlugin.Controls.Buttons.MenuButton
             }
         }
         /// <summary>
-        /// TODO: Check if it is relevant as leave event is handled in "onMouseMove" event 
+        /// Xử lý khi chuột rời khỏi control
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void _MouseLeaveHandler(object sender, MouseEventArgs e)
         {
-            if (States.IsHovering) // Avoid sending "leave" event twice
+            if (States.IsHovering) // Tránh gửi sự kiện "leave" hai lần
             {
                 States.IsHovering = false;
                 _RaiseEvent(OnButtonMouseLeave, e);
@@ -525,8 +515,8 @@ namespace RadialMenuPlugin.Controls.Buttons.MenuButton
             }
         }
         /// <summary>
-        /// Drag leave handler. As soon drag leaves frame rectangle, we are sure drag exit button.
-        /// NOTE that we have to check the "leave" state is not already fired by @dragOverHandler method
+        /// Xử lý khi kéo rời khỏi. Ngay khi kéo ra khỏi hình chữ nhật khung, chúng ta chắc chắn kéo đã thoát khỏi nút.
+        /// LƯU Ý rằng chúng ta phải kiểm tra trạng thái "leave" chưa được kích hoạt bởi phương thức @dragOverHandler
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
@@ -549,7 +539,7 @@ namespace RadialMenuPlugin.Controls.Buttons.MenuButton
             States.IsHovering = false;
         }
         /// <summary>
-        /// 
+        /// Kích hoạt sự kiện (helper)
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="action"></param>
@@ -558,7 +548,7 @@ namespace RadialMenuPlugin.Controls.Buttons.MenuButton
             action?.Invoke(this as T);
         }
         /// <summary>
-        /// 
+        /// Kích hoạt sự kiện với tham số (helper)
         /// </summary>
         /// <param name="action"></param>
         /// <param name="e"></param>
@@ -567,11 +557,11 @@ namespace RadialMenuPlugin.Controls.Buttons.MenuButton
             switch (typeof(E).Name)
             {
                 //
-                // Drag/Drop events
+                // Sự kiện Kéo/Thả
                 //
                 case nameof(DragEventArgs):
-                    // Raise event if we are in edit mode AND button is visible
-                    // NOTE: Event with nsView alpha=0, the drag event is fired
+                    // Kích hoạt sự kiện nếu đang ở chế độ chỉnh sửa VÀ nút đang hiển thị
+                    // LƯU Ý: Sự kiện với nsView alpha=0, sự kiện kéo vẫn được kích hoạt
                     if (States.IsEditMode && States.IsVisible)
                     {
                         if (action != null)
@@ -581,7 +571,7 @@ namespace RadialMenuPlugin.Controls.Buttons.MenuButton
                     }
                     break;
                 //
-                // Mouse events
+                // Sự kiện Chuột
                 //
                 case nameof(MouseEventArgs):
                     action?.Invoke(this as T, e);
@@ -591,8 +581,8 @@ namespace RadialMenuPlugin.Controls.Buttons.MenuButton
             }
         }
         /// <summary>
-        /// Update button Hovering state when mouse move over a button.
-        /// Return the old "hovering" state to compare with new state
+        /// Cập nhật trạng thái Hover của nút khi chuột di chuyển qua nút.
+        /// Trả về trạng thái "hovering" cũ để so sánh với trạng thái mới
         /// </summary>
         /// <param name="e"></param>
         /// <returns></returns>
@@ -604,20 +594,17 @@ namespace RadialMenuPlugin.Controls.Buttons.MenuButton
             {
                 var new_isHovering = _SectorData.IsPointInShape(e.Location);
 
-                if (new_isHovering)  // Mouse is over the button
+                if (new_isHovering)  // Chuột đang ở trên nút
                 {
-                    if (States.IsHovering) // Mouse was already over the button
-                    {
-                    }
-                    else // Mouse enters the button
+                    if (!States.IsHovering) // Chuột mới đi vào nút
                     {
                         States.IsHovering = true;
                         _AnimateHoverEffect();
                     }
                 }
-                else // Mouse is not over the button
+                else // Chuột không ở trên nút
                 {
-                    if (States.IsHovering) // mouse was over the button
+                    if (States.IsHovering) // chuột đã ở trên nút trước đó
                     {
                         States.IsHovering = false;
                         _AnimateHoverEffect();
@@ -627,36 +614,34 @@ namespace RadialMenuPlugin.Controls.Buttons.MenuButton
             return oldHovering;
         }
         /// <summary>
-        /// Update icon display and position
+        /// Cập nhật hiển thị và vị trí icon
         /// </summary>
         private void _UpdateIcon()
         {
-            // Update icon image. set to "null" if icon shouldn't be displayed
+            // Cập nhật ảnh icon. đặt thành "null" nếu không nên hiển thị icon
             if (_Model.Properties.IsActive) _Buttons[ButtonType.icon].SetImage(_Model.Properties.Icon); else _Buttons[ButtonType.icon].SetImage(null);
 
-            // if icon exists, update its position
+            // nếu icon tồn tại, cập nhật vị trí của nó
             if (_Model.Properties.Icon != null && _Model.Properties.IsActive)
             {
-                // Compute icon position in layout
-                // Use double precision and manual calculation to ensure center alignment
+                // Tính toán vị trí icon trong layout
+                // Sử dụng độ chính xác double và tính toán thủ công để đảm bảo căn giữa
                 var centerRadius = _SectorData.InnerRadius + (_SectorData.Thickness / 2.0);
                 var bisectorAngleRad = (_SectorData.StartAngle + _SectorData.SweepAngle / 2.0) * (Math.PI / 180.0);
                 
                 var arcCenterX = _SectorData.ArcCenter.X + centerRadius * Math.Cos(bisectorAngleRad);
                 var arcCenterY = _SectorData.ArcCenter.Y + centerRadius * Math.Sin(bisectorAngleRad);
 
-                // Convert World to Local manually relative to Bounds
+                // Chuyển đổi Thế giới sang Cục bộ thủ công tương đối với Bounds
                 var localX = arcCenterX - _SectorData.Bounds.X;
                 var localY = arcCenterY - _SectorData.Bounds.Y;
 
                 var posX = localX - (_Model.Properties.Icon.Size.Width / 2.0);
                 var posY = localY - (_Model.Properties.Icon.Size.Height / 2.0);
 
-                Move(_Buttons[ButtonType.icon], (int)Math.Round(posX), (int)Math.Round(posY)); // update icon location
+                Move(_Buttons[ButtonType.icon], (int)Math.Round(posX), (int)Math.Round(posY)); // cập nhật vị trí icon
                 if (_Model.Properties.IsFolder)
                 {
-                    // posX = posX + _Model.Properties.Icon.Size.Width - 4;
-                    // posY = posY - 6;
                     var outerCenterLocationWorld = _SectorData.GetPoint(_SectorData.SweepAngle / 2, _SectorData.Thickness - (_Buttons[ButtonType.folderIcon].Width / 2) - 2);
                     var outerCenterLocationLocal = _SectorData.ConvertWorldToLocal(outerCenterLocationWorld);
                     posX = outerCenterLocationLocal.X - (_Buttons[ButtonType.folderIcon].Width / 2);
@@ -675,14 +660,14 @@ namespace RadialMenuPlugin.Controls.Buttons.MenuButton
             }
         }
         /// <summary>
-        /// Update button images and size
+        /// Cập nhật hình ảnh và kích thước nút
         /// </summary>
         /// <param name="data"></param>
         private void _UpdateSectorData(SectorData data)
         {
-            // Update self data
+            // Cập nhật dữ liệu bản thân
             Size = data.Size;
-            // Update buttons image
+            // Cập nhật hình ảnh các nút
             _Buttons[ButtonType.normal].SetImage(data.Images.NormalStateImage, data.Size);
             // _Buttons[_ButtonType.normal].SetImage(data.Images.SectorMask, data.Size);
             _Buttons[ButtonType.over].SetImage(data.Images.OverStateImage, data.Size);
@@ -690,45 +675,43 @@ namespace RadialMenuPlugin.Controls.Buttons.MenuButton
             _Buttons[ButtonType.selected].SetImage(data.Images.SelectedStateImage, data.Size);
             _Buttons[ButtonType.icon].SetImage(_Model.Properties.Icon, data.Size);
 
-            // Update position
+            // Cập nhật vị trí
             _UpdateIcon();
             _UpdateTriggerIcon();
         }
         /// <summary>
-        /// 
+        /// Cập nhật vị trí icon chế độ chỉnh sửa
         /// </summary>
         private void _UpdateIconEditmode()
         {
-            // When in edit mode update edit icon position
+            // Khi ở chế độ chỉnh sửa, cập nhật vị trí icon chỉnh sửa
             if (States.IsEditMode)
             {
-                // Compute icon position in layout
+                // Tính toán vị trí icon trong layout
                 var arcCenterWorld = _SectorData.SectorCenter();
-                // var arcCenterLocal = _SectorData.ConvertWorldToLocal(arcCenterWorld);
-                // FIX: Manually calculate local position relative to the container's integer position to avoid sub-pixel misalignment
+                // FIX: Tính toán thủ công vị trí cục bộ tương đối với vị trí số nguyên của container để tránh lệch sub-pixel
                 var posX = arcCenterWorld.X - (int)_SectorData.Bounds.X - (_Buttons[ButtonType.editmode].Width / 2);
                 var posY = arcCenterWorld.Y - (int)_SectorData.Bounds.Y - (_Buttons[ButtonType.editmode].Height / 2);
-                Move(_Buttons[ButtonType.editmode], (int)posX, (int)posY); // update icon location
+                Move(_Buttons[ButtonType.editmode], (int)posX, (int)posY); // cập nhật vị trí icon
             }
         }
         /// <summary>
-        /// Update trigger key icon
+        /// Cập nhật icon phím kích hoạt (trigger key)
         /// </summary>
         private void _UpdateTriggerIcon()
         {
             Bitmap bm = null;
             if (_Model.Properties.Trigger != "")
             {
-                // Create Text image
+                // Tạo ảnh Text
                 var fontSize = 8;
-                var bitmapSize = new Size(fontSize + 2, fontSize + 2); // +2 because of underlined font
+                var bitmapSize = new Size(fontSize + 2, fontSize + 2); // +2 vì font gạch chân
                 bm = new Bitmap(bitmapSize, PixelFormat.Format32bppRgba);
                 var g = new Graphics(bm); g.PixelOffsetMode = PixelOffsetMode.Half; g.AntiAlias = true;
                 var font = Fonts.Sans(fontSize, FontStyle.None, FontDecoration.Underline);
                 g.DrawText(font, Colors.Black, 0, 0, _Model.Properties.Trigger.ToUpper());
-                // g.DrawRectangle(Colors.Black, 0, 0, 15, 15);
                 g.Dispose();
-                // Compute icon position in layout
+                // Tính toán vị trí icon trong layout
                 var sectorTopLeft = _SectorData.GetPoint(_SectorData.SweepAngle / 2, 10);
                 var sectorTopLeftLocal = _SectorData.ConvertWorldToLocal(sectorTopLeft);
                 var posX = sectorTopLeftLocal.X - (fontSize / 2);
@@ -736,9 +719,10 @@ namespace RadialMenuPlugin.Controls.Buttons.MenuButton
                 Move(_Buttons[ButtonType.trigger], (int)posX, (int)posY);
             }
 
-            // Update icon image and position
+            // Cập nhật ảnh và vị trí icon
             _Buttons[ButtonType.trigger].SetImage(bm, new Size(16, 16));
         }
+
         #endregion
     }
 }

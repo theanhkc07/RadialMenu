@@ -20,7 +20,57 @@ namespace RadialMenuPlugin.Controls
     {
         public static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-        #region Public properties
+        #region Cấu hình Tham số (Configuration Parameters)
+        /// <summary>
+        /// Bán kính vòng tròn trong cùng (mặc định: 30)
+        /// </summary>
+        protected static int s_defaultInnerRadius = 48;
+
+        /// <summary>
+        /// Độ dày của mỗi vòng tròn (mặc định: 48)
+        /// </summary>
+        protected static int s_defaultThickness = 48;
+
+        /// <summary>
+        /// Số cấp độ tối đa của menu (mặc định: 3)
+        /// </summary>
+        protected static int s_maxLevels = 3;
+
+        /// <summary>
+        /// Kích thước tổng thể của menu (mặc định: 1000x1000)
+        /// </summary>
+        protected static Size s_menuSize = new Size(300, 300);
+
+        /// <summary>
+        /// Khoảng cách giữa các vòng tròn (mặc định: 4)
+        /// </summary>
+        protected static int s_levelSpacing = 4;
+
+        /// <summary>
+        /// Số lượng icon (sector) cho vòng tròn cấp 2 (mặc định: 16)
+        /// </summary>
+        protected static int s_level2SectorCount = 16;
+
+        /// <summary>
+        /// Số lượng icon (sector) cho vòng tròn cấp 3 (mặc định: 24)
+        /// </summary>
+        protected static int s_level3SectorCount = 24;
+
+        /// <summary>
+        /// Dịch chuyển tâm vòng tròn theo phương X (mặc định: 0)
+        /// </summary>
+        protected static int s_centerOffsetX = 0;
+
+        /// <summary>
+        /// Dịch chuyển tâm vòng tròn theo phương Y (mặc định: 0)
+        /// </summary>
+        protected static int s_centerOffsetY = 0;
+        #endregion
+
+        #region Thuộc tính công khai (Public properties)
+        /// <summary>
+        /// Cập nhật vùng hiển thị của cửa sổ (Window Region) để tạo hình dạng trong suốt
+        /// </summary>
         private void _UpdateWindowRegion()
         {
             if (Rhino.Runtime.HostUtils.RunningOnWindows)
@@ -33,13 +83,14 @@ namespace RadialMenuPlugin.Controls
                     var region = new SysDrawing.Region(new SysDrawing.Rectangle(0, 0, 0, 0));
                     region.MakeEmpty();
 
-                    // 1. Center button
-                    // The center button is positioned at (centerX - width/2, centerY - height/2)
+                    // 1. Nút trung tâm
+                    // Nút trung tâm nằm ở (centerX - width/2, centerY - height/2)
+                    // Thu nhỏ 1px để tránh viền đen (halo)
                     var centerBtnRect = new SysDrawing.Rectangle(
-                        centerX - _CenterMenuButton.Size.Width / 2,
-                        centerY - _CenterMenuButton.Size.Height / 2,
-                        _CenterMenuButton.Size.Width,
-                        _CenterMenuButton.Size.Height
+                        centerX - _CenterMenuButton.Size.Width / 2 + 1,
+                        centerY - _CenterMenuButton.Size.Height / 2 + 1,
+                        _CenterMenuButton.Size.Width - 2,
+                        _CenterMenuButton.Size.Height - 2
                     );
 
                     using (var path = new SysDrawing2D.GraphicsPath())
@@ -48,11 +99,13 @@ namespace RadialMenuPlugin.Controls
                         region.Union(path);
                     }
 
-                    // 2. Levels (Rings)
+                    // 2. Các vòng tròn (Levels/Rings)
                     foreach (var level in _Levels)
                     {
-                        var inner = level.InnerRadius;
-                        var outer = level.InnerRadius + level.Thickness;
+                        // Thu nhỏ vùng một chút (1px) để tránh hiện tượng halo đen 
+                        // do khử răng cưa (anti-aliasing) hòa trộn với nền đen của form ở các cạnh.
+                        var inner = level.InnerRadius + 1;
+                        var outer = level.InnerRadius + level.Thickness - 1;
 
                         using (var pathOuter = new SysDrawing2D.GraphicsPath())
                         using (var pathInner = new SysDrawing2D.GraphicsPath())
@@ -77,105 +130,106 @@ namespace RadialMenuPlugin.Controls
         }
         #endregion
 
-        #region Protected/Private properties
-        protected static int s_defaultInnerRadius = 60;
-        protected static int s_defaultThickness = 65;
-        protected static int s_maxLevels = 3;
-        protected static Size s_menuSize = new Size(1000, 1000);
+        #region Thuộc tính Bảo vệ/Riêng tư (Protected/Private properties)
         protected PixelLayout _Layout = new PixelLayout();
         protected List<RadialMenuLevel> _Levels = new List<RadialMenuLevel>() {
                 new RadialMenuLevel(1,s_defaultInnerRadius,s_defaultThickness),
-                new RadialMenuLevel(2,s_defaultInnerRadius+s_defaultThickness+8,s_defaultThickness,360/8/2), // For this one, start angle at 45° to alternate buttons
-                new RadialMenuLevel(3,s_defaultInnerRadius+s_defaultThickness+8+s_defaultThickness+8,s_defaultThickness),
+                new RadialMenuLevel(2,s_defaultInnerRadius+s_defaultThickness+s_levelSpacing,s_defaultThickness,360f/(float)s_level2SectorCount/2f, s_level2SectorCount), // Level 2
+                new RadialMenuLevel(3,s_defaultInnerRadius+s_defaultThickness+s_levelSpacing+s_defaultThickness+s_levelSpacing,s_defaultThickness,0, s_level3SectorCount), // Level 3
             };
         /// <summary>
-        /// Keep track of drag source Control to register/unregister "dragEnd" event
+        /// Theo dõi Control nguồn kéo để đăng ký/hủy đăng ký sự kiện "dragEnd"
         /// </summary>
         protected Control _Dragsource;
         /// <summary>
-        /// Context menu
+        /// Menu ngữ cảnh (Context menu)
         /// </summary>
         protected ButtonSettingEditorForm _ContextMenuForm;
         /// <summary>
-        /// Current model of mouse over button
+        /// Model hiện tại của nút đang được chuột trỏ vào
         /// <para>
-        /// REMARK:
+        /// LƯU Ý:
         /// </para>
         /// <para>
-        /// We use this because mouse enter/leave of button do not occurs sequentially, and sometime leave event occurs after enter event.
+        /// Chúng ta sử dụng cái này vì sự kiện chuột enter/leave của nút không xảy ra tuần tự, và đôi khi sự kiện leave xảy ra sau sự kiện enter.
         /// </para>
         /// <para>
-        /// That lead in no "center button" tooltip displayed. So we used this property in <see cref="_UpdateTooltipBinding"/> to check if we should update binding for center button tooltip
+        /// Điều đó dẫn đến việc tooltip "nút trung tâm" không hiển thị. Vì vậy chúng ta dùng thuộc tính này trong <see cref="_UpdateTooltipBinding"/> để kiểm tra xem có nên cập nhật binding cho tooltip nút trung tâm hay không
         /// </para>
         /// </summary>
         protected Model _CurrentButtonModel;
 
         /// <summary>
-        /// Current radial menu mode : true=>Edit mode, false=>normal mode 
+        /// Chế độ menu radial hiện tại: true=>Chế độ chỉnh sửa, false=>Chế độ bình thường
         /// </summary>
         protected bool _EditMode = false;
         /// <summary>
-        /// Associate a menu level to a Control of type <SectorArcRadialControl>
+        /// Liên kết một cấp menu với một Control kiểu <SectorArcRadialControl>
         /// </summary>
         protected Dictionary<RadialMenuLevel, RadialMenuControl> _Controls = new Dictionary<RadialMenuLevel, RadialMenuControl>();
         protected FormCenterButton _CenterMenuButton;
-        protected readonly Macro MouseHoverLeftTooltip = new Macro("", "Close");
-        protected readonly Macro MouseHoverRightTooltip = new Macro("", "Edit radial menu");
-        /// <summary>
-        /// Ref to Model object when button is dragged
-        /// </summary>
+        protected readonly Macro MouseHoverLeftTooltip = new Macro("", "Đóng");
+        protected readonly Macro MouseHoverRightTooltip = new Macro("", "Chỉnh sửa menu");
         #endregion
 
-        #region Public methods
+        #region Phương thức công khai (Public methods)
 
 
         /// <summary>
-        /// 
+        /// Khởi tạo form menu radial
         /// </summary>
         /// <param name="plugin"></param>
         public RadialMenuForm(PlugIn plugin) : base(plugin)
         {
             Size = new Size(s_menuSize.Width, s_menuSize.Height);
-            _InitLevels(); // Create "blank" radial menu controls (i.e. no button IDs, blank models)
+            _InitLevels(); // Tạo các control menu radial "trống" (tức là không có ID nút, model trống)
             KeyDown += (s, e) =>
             {
-                // React to key press only when no context menu is shown and if the key is not "escape"
-                // We will manage here key press for button trigger by keyboard
-                // REMARK:"escape" keyup event is managed in "_OnEscapePressed" handler and is also fired by the RadialMenuCommand class
+                // Chỉ phản hồi phím nhấn khi không có menu ngữ cảnh nào đang hiển thị và phím không phải là "escape"
+                // Chúng ta sẽ quản lý phím nhấn cho nút kích hoạt bằng bàn phím ở đây
+                // LƯU Ý: sự kiện keyup "escape" được quản lý trong bộ xử lý "_OnEscapePressed" và cũng được kích hoạt bởi lớp RadialMenuCommand
                 if (e.Key == Keys.Escape) return;
                 if (_ContextMenuForm.Visible == false)
                 {
                     _OnKeyPressed(s, e);
                 }
             };
-            // Init the button context menu Form
+            // Khởi tạo Form menu ngữ cảnh cho nút
             _ContextMenuForm = new ButtonSettingEditorForm();
-            _ContextMenuForm.TriggerTextChanging += _OnContextMenuTriggerChanging; // Check trigger key is not already used in radial menu level
+            _ContextMenuForm.TriggerTextChanging += _OnContextMenuTriggerChanging; // Kiểm tra phím kích hoạt chưa được sử dụng trong cấp menu radial
 
-            // Ensure when form is shown that we display only first menu level
+            // Đảm bảo khi form được hiển thị, chúng ta chỉ hiển thị cấp menu đầu tiên
             Shown += (o, e) =>
             {
                 _UpdateWindowRegion();
                 foreach (var ctrl in _Controls.Values)
                 {
-                    ctrl.Show(false); // Hide and reset radial control enable and selection
-                    ctrl.SwitchEditMode(false); // ensure disable edit mode
+                    ctrl.Show(false); // Ẩn và reset kích hoạt và lựa chọn của radial control
+                    ctrl.SwitchEditMode(false); // đảm bảo tắt chế độ chỉnh sửa
                 }
                 var radialControl = _Controls.First(obj => obj.Key.Level == 1).Value;
                 radialControl.SwitchEditMode(false);
                 _EditMode = false;
                 radialControl.Show(true);
+                Focus(); // Đảm bảo form có focus khi hiển thị
             };
 
-            // Create close button
+            // Tự động đóng form khi mất focus (click ra ngoài), trừ khi đang mở menu ngữ cảnh
+            LostFocus += (o, e) =>
+            {
+                if (_ContextMenuForm != null && _ContextMenuForm.Visible) return;
+                _OnCloseClickEvent(this);
+            };
+
+            // Tạo nút đóng (close button)
             _InitCenterButton();
             _Layout.Add(_CenterMenuButton, (Size.Width / 2) - _CenterMenuButton.Size.Width / 2, (Size.Height / 2) - (_CenterMenuButton.Size.Height / 2));
 
-            // Create and add RadialMenu Control for 1st level
+            // Tạo và thêm RadialMenu Control cho cấp 1
             var ctrl = _Controls.First(level => level.Key.Level == 1).Value;
-            ctrl.SetMenuForButtonID(null); // Init buttons and model for 1st menu level
+            ctrl.SetMenuForButtonID(null); // Khởi tạo nút và model cho cấp menu 1
 
-            // Add layout to content of form
+            // Thêm layout vào nội dung của form
             Content = _Layout;
         }
         /// <summary>
@@ -190,9 +244,9 @@ namespace RadialMenuPlugin.Controls
 
         #endregion
 
-        #region Protected/Private methods
+        #region Phương thức Bảo vệ/Riêng tư (Protected/Private methods)
         /// <summary>
-        /// Init menu level controls
+        /// Khởi tạo các control cấp menu
         /// </summary>
         protected void _InitLevels()
         {
@@ -200,31 +254,32 @@ namespace RadialMenuPlugin.Controls
             {
                 var ctrl = new RadialMenuControl(_Levels[i]);
 
-                // Mouse events
+                // Sự kiện chuột
                 ctrl.MouseEnterButton += _RadialControlMouseEnterButtonHandler;
                 ctrl.MouseMoveButton += _RadialControlMouseMoveButtonHandler;
                 ctrl.MouseLeaveButton += _RadialControlMouseLeaveButtonHandler;
                 ctrl.MouseClickButton += _RadialControlMouseClickHandler;
                 ctrl.ButtonContextMenu += _RadialControlContextMenu;
 
-                // Drag Drop events
+                // Sự kiện Kéo Thả
                 ctrl.DragDropEnterButton += _RadialControlDragEnterHandler;
                 ctrl.DragDropOverButton += _RadialControlDragOverHandler;
-                ctrl.DragDropLeaveButton += _RadialControlDragLeaveHandler;
                 ctrl.DragDropButton += _RadialControlDragDropHandler;
                 ctrl.RemoveButton += _RadialControlRemoveButton;
                 _Controls.Add(_Levels[i], ctrl);
             }
             //
-            //REMARK Order is VERY important because arc button are rectangles. So if submenu level 2 is not "top most" (i.e. last position), drag over doesn't work and sometimes
-            // drag over don't detect level "2" buttons
+            // LƯU Ý Thứ tự RẤT quan trọng vì nút cung tròn là hình chữ nhật. Vì vậy nếu submenu cấp 2 không phải là "trên cùng" (tức là vị trí cuối cùng), drag over sẽ không hoạt động và đôi khi
+            // drag over không phát hiện được nút cấp "2"
             //
-            _Layout.Add(_Controls.ElementAt(0).Value, (Size.Width / 2) - (_Controls.ElementAt(0).Value.Size.Width / 2), Size.Height / 2 - (_Controls.ElementAt(0).Value.Size.Height / 2));
-            _Layout.Add(_Controls.ElementAt(2).Value, (Size.Width / 2) - (_Controls.ElementAt(2).Value.Size.Width / 2), Size.Height / 2 - (_Controls.ElementAt(2).Value.Size.Height / 2));
-            _Layout.Add(_Controls.ElementAt(1).Value, (Size.Width / 2) - (_Controls.ElementAt(1).Value.Size.Width / 2), Size.Height / 2 - (_Controls.ElementAt(1).Value.Size.Height / 2));
+            var cx = (Size.Width / 2) + s_centerOffsetX;
+            var cy = (Size.Height / 2) + s_centerOffsetY;
+            _Layout.Add(_Controls.ElementAt(0).Value, cx - (_Controls.ElementAt(0).Value.Size.Width / 2), cy - (_Controls.ElementAt(0).Value.Size.Height / 2));
+            _Layout.Add(_Controls.ElementAt(2).Value, cx - (_Controls.ElementAt(2).Value.Size.Width / 2), cy - (_Controls.ElementAt(2).Value.Size.Height / 2));
+            _Layout.Add(_Controls.ElementAt(1).Value, cx - (_Controls.ElementAt(1).Value.Size.Width / 2), cy - (_Controls.ElementAt(1).Value.Size.Height / 2));
         }
         /// <summary>
-        /// 
+        /// Chấp nhận DragDrop
         /// </summary>
         /// <param name="eventArgs"></param>
         /// <returns></returns>
@@ -241,7 +296,7 @@ namespace RadialMenuPlugin.Controls
                     {
                         if (sourceDragModel.Data.Properties.IsFolder)
                         {
-                            if (sourceDragModel == eventArgs.TargetModel) // If source is dragged onto initial place, accept drop
+                            if (sourceDragModel == eventArgs.TargetModel) // Nếu nguồn được kéo vào vị trí ban đầu, chấp nhận thả
                             {
                                 eventArgs.DragEventSourceArgs.Effects = DragEffects.All;
                                 ret = true;
@@ -263,28 +318,25 @@ namespace RadialMenuPlugin.Controls
                     return true;
                 case DragSourceType.unknown:
                 default:
-                    eventArgs.DragEventSourceArgs.Effects = DragEffects.None; // Reject drop if source is unknown
+                    eventArgs.DragEventSourceArgs.Effects = DragEffects.None; // Từ chối thả nếu nguồn không xác định
                     return false;
             }
         }
         /// <summary>
-        /// Create DragEnd event handler for the source control that initiate a drag/drop. Will remove any existing DragEnd handler if exists
+        /// Tạo bộ xử lý sự kiện DragEnd cho control nguồn bắt đầu kéo/thả. Sẽ xóa bộ xử lý DragEnd hiện có nếu tồn tại
         /// </summary>
         /// <param name="sourceObject"></param>
         protected void _RegisterDragEndHandler(Control sourceObject)
         {
-            // if (!(sourceObject is MenuButton)) // Don't register drag end for MenuButton, it will raise its own event <DoDragEnd>
-            // {
             if (_Dragsource != null)
             {
-                _Dragsource.DragEnd -= _RadialControlDragEndHandler; // Remove event handler for previous Drag source Control
+                _Dragsource.DragEnd -= _RadialControlDragEndHandler; // Xóa bộ xử lý sự kiện cho Control nguồn kéo trước đó
             }
             _Dragsource = sourceObject;
             _Dragsource.DragEnd += _RadialControlDragEndHandler;
-            // }
         }
         /// <summary>
-        /// Update models after a drag/drop is done
+        /// Cập nhật model sau khi kéo/thả hoàn tất
         /// </summary>
         /// <param name="updatedProperties"></param>
         /// <param name="targetModel"></param>
@@ -298,32 +350,32 @@ namespace RadialMenuPlugin.Controls
             targetModel.Data.Properties.RightMacro = updatedProperties.RightMacro;
             targetModel.Data.Properties.CommandGUID = updatedProperties.CommandGUID;
 
-            if (targetLevel > 1) // If icon is drop on a sub menu -> Update parents menu models
+            if (targetLevel > 1) // Nếu icon được thả vào menu con -> Cập nhật model menu cha
             {
                 var parentModel = targetModel.Parent;
                 do
                 {
-                    // Keep parent icon untouched if already set
+                    // Giữ nguyên icon cha nếu đã được đặt
                     if (parentModel.Data.Properties.Icon == null)
                     {
                         parentModel.Data.Properties.Icon = updatedProperties.Icon;
                     }
-                    // Keep parent "isFolder" untouched if already set
+                    // Giữ nguyên "isFolder" cha nếu đã được đặt
                     if (parentModel.Data.Properties.IsFolder == false)
                     {
                         parentModel.Data.Properties.IsFolder = true;
                     }
-                    parentModel.Data.Properties.IsActive = true; // Ensure icon is active
+                    parentModel.Data.Properties.IsActive = true; // Đảm bảo icon hoạt động
                     parentModel.Data.Properties.CommandGUID = updatedProperties.CommandGUID;
                     parentModel = parentModel.Parent;
                 } while (parentModel != null);
             }
         }
         /// <summary>
-        /// Find and return first control object that matches <paramref name="predicate"/>
+        /// Tìm và trả về control đầu tiên khớp với <paramref name="predicate"/>
         /// </summary>
-        /// <param name="predicate">function to find object</param>
-        /// <returns>Control instance if found, null if not found</returns>
+        /// <param name="predicate">hàm để tìm đối tượng</param>
+        /// <returns>Instance Control nếu tìm thấy, null nếu không tìm thấy</returns>
         protected RadialMenuControl _GetControl(Func<RadialMenuControl, bool> predicate)
         {
             RadialMenuControl ctrl = null;
@@ -339,49 +391,49 @@ namespace RadialMenuPlugin.Controls
         }
         protected void _RunRhinoCommand(string command)
         {
-            _OnCloseClickEvent(this); // close radial menu
+            _OnCloseClickEvent(this); // đóng menu radial
             RhinoApp.SetFocusToMainWindow();
-            RhinoApp.RunScript(command, false); // Run Rhino command
+            RhinoApp.RunScript(command, false); // Chạy lệnh Rhino
         }
         /// <summary>
-        /// Open a submenu from an opened menu control and given a button ID
+        /// Mở menu con từ control menu đang mở và ID nút đã cho
         /// </summary>
-        /// <param name="radialMenuControl">Currently opened submenu. Provided to compute next submenu level</param>
-        /// <param name="model">Model contining the current button ID to open submenu for</param>
-        /// <returns>the new <see cref="RadialMenuControl"/> opened submenu or null if no new submenu was opened</returns>
+        /// <param name="radialMenuControl">Menu con đang mở hiện tại. Được cung cấp để tính toán cấp menu con tiếp theo</param>
+        /// <param name="model">Model chứa ID nút hiện tại để mở menu con cho nó</param>
+        /// <returns>Menu con <see cref="RadialMenuControl"/> mới được mở hoặc null nếu không có menu con mới nào được mở</returns>
         protected RadialMenuControl _ShowSubmenu(RadialMenuControl radialMenuControl, Model model)
         {
-            var nextLevel = radialMenuControl.Level.Level + 1; // Compute next level number
+            var nextLevel = radialMenuControl.Level.Level + 1; // Tính số cấp tiếp theo
             var ctrl = _GetControl(element => element.Level.Level == nextLevel);
             if (ctrl != null)
             {
-                ctrl.SetMenuForButtonID(model); // Update radial control buttons
-                ctrl.Show(true); // Ensure control is visible
+                ctrl.SetMenuForButtonID(model); // Cập nhật các nút control radial
+                ctrl.Show(true); // Đảm bảo control hiển thị
             }
             return ctrl;
         }
 
         /// <summary>
-        /// Hide all submenus from last/max to level of <paramref name="radialMenuControl"/>
-        /// <para>If no <paramref name="radialMenuControl"/> id provided, close all submenu except root submenu</para>
+        /// Ẩn tất cả các menu con từ cấp cuối/lớn nhất đến cấp của <paramref name="radialMenuControl"/>
+        /// <para>Nếu không cung cấp <paramref name="radialMenuControl"/>, đóng tất cả menu con ngoại trừ menu gốc</para>
         /// </summary>
-        /// <param name="radialMenuControl">Menu control to keep</param>
+        /// <param name="radialMenuControl">Control menu cần giữ lại</param>
         private void _HideSubmenu(RadialMenuControl radialMenuControl = null)
         {
             var levelToClose = radialMenuControl == null ? 1 : radialMenuControl.Level.Level;
             foreach (var control in _Controls.Values)
             {
-                // Hide menu control if higher than the one provided (or higher than "root" control menu)
+                // Ẩn control menu nếu cấp cao hơn cấp được cung cấp (hoặc cao hơn menu control "gốc")
                 if (control.Level.Level > levelToClose)
                 {
                     control.Show(false);
-                    control.DisableButtonsExceptSelection(); // Enable all buttons
-                    control.SelectedButtonID = ""; // Reset selection
+                    control.DisableButtonsExceptSelection(); // Bật tất cả các nút
+                    control.SelectedButtonID = ""; // Đặt lại lựa chọn
                 }
             }
         }
         /// <summary>
-        /// Do some cleanup of visual control before exit (Hide) the plugin Form object
+        /// Thực hiện dọn dẹp visual control trước khi thoát (Ẩn) đối tượng Form plugin
         /// </summary>
         /// <param name="sender"></param>
         protected override void _OnCloseClickEvent(object sender)
@@ -394,9 +446,9 @@ namespace RadialMenuPlugin.Controls
             base._OnCloseClickEvent(sender);
         }
         /// <summary>
-        /// Update binding for the center menu button
+        /// Cập nhật binding cho nút menu trung tâm
         /// <para>
-        /// REMARK: model can be null to clear the displayed text
+        /// LƯU Ý: model có thể null để xóa văn bản hiển thị
         /// </para>
         /// </summary>
         /// <param name="model"></param>
@@ -408,8 +460,8 @@ namespace RadialMenuPlugin.Controls
             }
             else
             {
-                // Show left/right macro tooltip, except on folder items
-                if (!model.Data.Properties.IsFolder) _CenterMenuButton.SetTooltip(model.Data.Properties.LeftMacro, model.Data.Properties.RightMacro);
+                // Hiển thị tooltip macro trái/phải cho cả nút thường và nút thư mục (nếu có lệnh)
+                _CenterMenuButton.SetTooltip(model.Data.Properties.LeftMacro, model.Data.Properties.RightMacro);
             }
         }
         /// <summary>
@@ -420,9 +472,9 @@ namespace RadialMenuPlugin.Controls
         protected bool _TriggerMenuItem(char key)
         {
 #nullable enable
-            RadialMenuControl? openedControl = null; // Current highest opened menu
+            RadialMenuControl? openedControl = null; // Menu mở cao nhất hiện tại
 #nullable disable
-            // Get the current shown level and the parent model from the selected button of parent model
+            // Lấy cấp hiện đang hiển thị và model cha từ nút được chọn của model cha
             foreach (var control in _Controls)
             {
                 if (control.Value.IsVisible)
@@ -461,19 +513,19 @@ namespace RadialMenuPlugin.Controls
 
         #region Event handlers
         /// <summary>
-        /// Each ESC keypress closes sub menu until level 1 submenu is reached => Close radial menu
+        /// Mỗi lần nhấn phím ESC sẽ đóng menu con cho đến khi đạt đến menu con cấp 1 => Đóng menu radial
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
         protected override void _OnEscapePressed(object sender, KeyEventArgs e)
         {
-            // First check if contextmenu is opened. If so, close it
+            // Trước tiên kiểm tra xem contextmenu có đang mở không. Nếu có, đóng nó
             if (_ContextMenuForm.Visible)
             {
                 _ContextMenuForm.Close();
                 return;
             }
-            if (Visible) // Ensure radial menu is currently running
+            if (Visible) // Đảm bảo menu radial hiện đang chạy
             {
                 RadialMenuLevel topMostOpenedLevel = null;
                 foreach (var control in _Controls)
@@ -483,12 +535,12 @@ namespace RadialMenuPlugin.Controls
                         topMostOpenedLevel = control.Key;
                     }
                 }
-                // Hide top most sub menu if we found any
+                // Ẩn menu con cao nhất nếu tìm thấy
                 if (topMostOpenedLevel != null)
                 {
                     if (topMostOpenedLevel.Level == 1)
                     {
-                        // Close the radial menu
+                        // Đóng menu radial
                         _OnCloseClickEvent(this);
                     }
                     else
@@ -499,7 +551,7 @@ namespace RadialMenuPlugin.Controls
             }
         }
         /// <summary>
-        /// Event handler for context menu Trigger text changing : Do not allow same trigger key at same level
+        /// Bộ xử lý sự kiện cho thay đổi văn bản kích hoạt menu ngữ cảnh: Không cho phép cùng một phím kích hoạt ở cùng một cấp
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
@@ -527,26 +579,13 @@ namespace RadialMenuPlugin.Controls
             {
                 e.Handled = _TriggerMenuItem(e.KeyChar);
             }
-            else
-            {
-                //FIXME: Not great feature. Find another way to do this
-                // if (e.Application || e.Control || e.Alt)
-                // {
-                //     if (!HasFocus)
-                //     {
-                //         Focus();
-                //         e.Handled = true;
-                //     }
-                // }
-            }
-
         }
         //
-        //  Mouse enter, over and leave handlers to prevent default radial control default behavior when needed (i.e. Avoid un-selecting button)
-        //  Those custom behaviors will influence the event raising of "SelectionChanged", so the logic of displaying sub menu levels is managed in "onSelectionChanged" event
+        //  Bộ xử lý chuột enter, over và leave để ngăn hành vi mặc định của control radial khi cần (ví dụ: Tránh bỏ chọn nút)
+        //  Những hành vi tùy chỉnh này sẽ ảnh hưởng đến việc kích hoạt sự kiện "SelectionChanged", vì vậy logic hiển thị các cấp menu con được quản lý trong sự kiện "onSelectionChanged"
         //
         /// <summary>
-        /// Mouse enter a button : Manage show/hide submenus
+        /// Chuột đi vào một nút: Quản lý hiện/ẩn menu con
         /// </summary>
         /// <param name="radialMenuControl"></param>
         protected void _RadialControlMouseEnterButtonHandler(RadialMenuControl radialMenuControl, ButtonMouseEventArgs e)
@@ -555,35 +594,35 @@ namespace RadialMenuPlugin.Controls
             if (e.Model.Data.Properties.IsFolder)
             {
                 var newSubmenu = _ShowSubmenu(radialMenuControl, e.Model);
-                // Hide higher levels from new opened submenu if any
+                // Ẩn các cấp cao hơn từ menu con mới mở nếu có
                 if (newSubmenu != null)
                 {
                     _HideSubmenu(newSubmenu);
                 }
             }
-            else // If we enter a non folder, hide higher submenus 
+            else // Nếu chúng ta vào một mục không phải thư mục, ẩn các menu con cao hơn
             {
-                _HideSubmenu(radialMenuControl); // Hide any opened higher submenu
+                _HideSubmenu(radialMenuControl); // Ẩn bất kỳ menu con nào cao hơn đang mở
             }
-            _UpdateTooltipBinding(e.Model); // Update center button tooltip
+            _UpdateTooltipBinding(e.Model); // Cập nhật tooltip nút trung tâm
         }
 
         /// <summary>
-        /// Mouse over a button
+        /// Chuột di chuyển trên một nút
         /// </summary>
         /// <param name="radialMenuControl"></param>
         protected void _RadialControlMouseMoveButtonHandler(RadialMenuControl radialMenuControl, ButtonMouseEventArgs e)
         {
             if (_ContextMenuForm.Visible == false)
             {
-                Focus(); // Give radial menu focus when mouse overs a button
+                Focus(); // Cấp focus cho menu radial khi chuột di chuyển qua một nút
             }
             // _UpdateTooltipBinding(e.Model); // update tooltip
         }
         protected void _RadialControlMouseClickHandler(RadialMenuControl radialMenuControl, ButtonMouseEventArgs e)
         {
-            // Do nothing on "folder" click
-            if (e.Model.Data.Properties.IsFolder) return;
+            // Đã bỏ chặn click vào thư mục để cho phép lệnh chạy ngay cả trên nút cha
+            // if (e.Model.Data.Properties.IsFolder) return;
 
             switch (e.MouseEventArgs.Buttons)
             {
@@ -602,43 +641,24 @@ namespace RadialMenuPlugin.Controls
             }
         }
         /// <summary>
-        /// Mouse leave a button
+        /// Chuột rời khỏi một nút
         /// </summary>
         /// <param name="radialMenuControl"></param>
         protected void _RadialControlMouseLeaveButtonHandler(RadialMenuControl radialMenuControl, ButtonMouseEventArgs e)
         {
             Logger.Debug($"Mouse leave button {e.Model.Data.ButtonID}");
 
-            //HACK: We can't leave a button if mouse is hover center button. This hack is because sometimes the "leave" event of a button can trigger AFTER the center button "ENTER" event
-            if (_CenterMenuButton.CurrentButtonState.GetType() == typeof(HoverState)) { }
-            else
+            //HACK: Chúng ta không thể rời khỏi một nút nếu chuột đang di chuột qua nút trung tâm. Hack này là vì đôi khi sự kiện "leave" của một nút có thể kích hoạt SAU sự kiện "ENTER" của nút trung tâm
+            if (_CenterMenuButton.CurrentButtonState.GetType() != typeof(HoverState))
             {
-                _UpdateTooltipBinding(); // Update tooltip
+                _UpdateTooltipBinding(); // Cập nhật tooltip
             }
-            if (_ContextMenuForm.Visible) return; // Don't give Rhino main window focus if we're showing context menu
+            if (_ContextMenuForm.Visible) return; // Không cấp focus cho cửa sổ chính Rhino nếu chúng ta đang hiển thị menu ngữ cảnh
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="radialMenuControl"></param>
-        protected void _RadialControlSelectionChangedHandler(RadialMenuControl radialMenuControl)
-        { }
 
         /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="radialMenuControl"></param>
-        protected void _RadialControlFocusRequestedHandler(RadialMenuControl radialMenuControl) { }
-        /// <summary>
-        /// Event when button request accept drop target. If drop target menu level is != from level of drag source AND it was a "self" drag, don't accept
-        /// </summary>
-        /// <param name="radialMenuControl"></param>
-        /// <param name="eventArgs"></param>
-        protected void _RadialControlAcceptDropHandler(RadialMenuControl radialMenuControl, DropTargetArgs eventArgs)
-        { }
-        /// <summary>
-        /// Button properties were updated, dragging mode ended
+        /// Thuộc tính nút đã được cập nhật, chế độ kéo đã kết thúc
         /// </summary>
         /// <param name="radialMenuControl"></param>
         /// <param name="eventArgs"></param>
@@ -646,10 +666,10 @@ namespace RadialMenuPlugin.Controls
         {
             if (_AcceptDragDrop(eventArgs))
             {
-                if (radialMenuControl.Level.Level < s_maxLevels) radialMenuControl.SelectedButtonID = eventArgs.TargetModel.Data.ButtonID; // Update selection except for last menu level (useless)
-                var newMenuControl = _ShowSubmenu(radialMenuControl, eventArgs.TargetModel); // Open submenu if drop is accepted
-                if (newMenuControl != null) _HideSubmenu(newMenuControl); // Hide higher opened submenus
-                _RegisterDragEndHandler(eventArgs.DragEventSourceArgs.Source); // Register "DragEnd" event handler
+                if (radialMenuControl.Level.Level < s_maxLevels) radialMenuControl.SelectedButtonID = eventArgs.TargetModel.Data.ButtonID; // Cập nhật lựa chọn ngoại trừ cấp menu cuối cùng (vô ích)
+                var newMenuControl = _ShowSubmenu(radialMenuControl, eventArgs.TargetModel); // Mở menu con nếu việc thả được chấp nhận
+                if (newMenuControl != null) _HideSubmenu(newMenuControl); // Ẩn các menu con cao hơn đang mở
+                _RegisterDragEndHandler(eventArgs.DragEventSourceArgs.Source); // Đăng ký bộ xử lý sự kiện "DragEnd"
             }
         }
         /// <summary>
@@ -678,7 +698,7 @@ namespace RadialMenuPlugin.Controls
         /// <param name="eventArgs"></param>
         protected void _RadialControlDragDropHandler(RadialMenuControl radialMenuControl, ButtonDragDropEventArgs eventArgs)
         {
-            // Update menu button data
+            // Cập nhật dữ liệu nút menu
             if (_AcceptDragDrop(eventArgs))
             {
                 switch (Utilities.DragDropUtilities.dragSourceType(eventArgs.DragEventSourceArgs.Source))
@@ -692,22 +712,22 @@ namespace RadialMenuPlugin.Controls
                         var sourceDragModel = ModelController.Instance.Find(guid);
                         if (sourceDragModel != null)
                         {
-                            if (sourceDragModel == eventArgs.TargetModel) // If source and target are the same, do nothing
+                            if (sourceDragModel == eventArgs.TargetModel) // Nếu nguồn và đích giống nhau, không làm gì cả
                             {
                                 return;
                             }
                             else
                             {
-                                if (eventArgs.TargetModel.Parent == sourceDragModel.Parent) // Item is moved on same level sub menu
+                                if (eventArgs.TargetModel.Parent == sourceDragModel.Parent) // Mục được di chuyển trên cùng một menu con
                                 {
-                                    // Update target model
+                                    // Cập nhật model đích
                                     eventArgs.TargetModel.Data.Properties.Icon = sourceDragModel.Data.Properties.Icon;
                                     eventArgs.TargetModel.Data.Properties.IsFolder = false;
                                     eventArgs.TargetModel.Data.Properties.IsActive = true;
                                     eventArgs.TargetModel.Data.Properties.LeftMacro = sourceDragModel.Data.Properties.LeftMacro;
                                     eventArgs.TargetModel.Data.Properties.RightMacro = sourceDragModel.Data.Properties.RightMacro;
                                     eventArgs.TargetModel.Data.Properties.CommandGUID = sourceDragModel.Data.Properties.CommandGUID;
-                                    // Clear source model data
+                                    // Xóa dữ liệu model nguồn
                                     sourceDragModel.Data.Properties.Icon = null;
                                     sourceDragModel.Data.Properties.IsActive = false;
                                     sourceDragModel.Data.Properties.IsFolder = false;
@@ -715,16 +735,16 @@ namespace RadialMenuPlugin.Controls
                                     sourceDragModel.Data.Properties.RightMacro = new Macro();
                                     sourceDragModel.Data.Properties.CommandGUID = Guid.Empty;
                                 }
-                                else // Item is moved on another level sub menu
+                                else // Mục được di chuyển sang menu con cấp khác
                                 {
-                                    // Create new model properties from source Model
+                                    // Tạo thuộc tính model mới từ Model nguồn
                                     ButtonProperties data = new ButtonProperties(
                                         new Macro(sourceDragModel.Data.Properties.LeftMacro.Script, sourceDragModel.Data.Properties.LeftMacro.Tooltip),
                                         new Macro(sourceDragModel.Data.Properties.RightMacro.Script, sourceDragModel.Data.Properties.RightMacro.Tooltip),
                                         new Icon(sourceDragModel.Data.Properties.Icon.Frames), true, false,
                                         sourceDragModel.Data.Properties.CommandGUID);
 
-                                    // Clear source model data
+                                    // Xóa dữ liệu model nguồn
                                     sourceDragModel.Data.Properties.CommandGUID = Guid.Empty;
                                     sourceDragModel.Data.Properties.Icon = null;
                                     sourceDragModel.Data.Properties.IsActive = false;
@@ -732,7 +752,7 @@ namespace RadialMenuPlugin.Controls
                                     sourceDragModel.Data.Properties.LeftMacro = new Macro();
                                     sourceDragModel.Data.Properties.RightMacro = new Macro();
 
-                                    // (Recursive) Check each source item parent submenus still contains children. If not, clear parent model
+                                    // (Đệ quy) Kiểm tra xem mỗi menu con cha của mục nguồn còn chứa con không. Nếu không, xóa model cha
                                     var parent = sourceDragModel.Parent;
                                     while (parent != null)
                                     {
@@ -741,7 +761,7 @@ namespace RadialMenuPlugin.Controls
                                         {
                                             if (model.Data.Properties.Icon != null) activeIcon++;
                                         }
-                                        if (activeIcon == 0) // Parent model has no children left -> Remove icon and isFolder flag for parent model
+                                        if (activeIcon == 0) // Model cha không còn con -> Xóa icon và cờ isFolder cho model cha
                                         {
                                             parent.Data.Properties.Icon = null;
                                             parent.Data.Properties.IsFolder = false;
@@ -751,7 +771,7 @@ namespace RadialMenuPlugin.Controls
                                         parent = parent.Parent;
 
                                     }
-                                    // Rebuidld/Update sub menu hierarchy for target drop
+                                    // Xây dựng lại/Cập nhật phân cấp menu con cho mục tiêu thả
                                     _UpdateDropItem(data, eventArgs.TargetModel, radialMenuControl.Level.Level);
                                 }
                             }
@@ -764,13 +784,13 @@ namespace RadialMenuPlugin.Controls
         }
 
         /// <summary>
-        /// When source control drag ends, clear all opened submenus
+        /// Khi việc kéo control nguồn kết thúc, xóa tất cả các menu con đang mở
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="eventArgs"></param>
         protected void _RadialControlDragEndHandler(object sender, DragEventArgs eventArgs)
         {
-            // Close submenus except level 1 menu
+            // Đóng các menu con ngoại trừ menu cấp 1
             foreach (var radialMenuControl in _Controls.Values)
             {
                 switch (radialMenuControl.Level.Level)
@@ -783,7 +803,7 @@ namespace RadialMenuPlugin.Controls
                         break;
                 }
             }
-            // Cleanup DragEnd handler
+            // Dọn dẹp bộ xử lý DragEnd
             if (_Dragsource != null)
             {
                 _Dragsource.DragEnd -= _RadialControlDragEndHandler;
@@ -791,9 +811,9 @@ namespace RadialMenuPlugin.Controls
             }
         }
         /// <summary>
-        /// Remove button is requested. Clear buttons models and all children if they exists
+        /// Yêu cầu xóa nút. Xóa các model nút và tất cả các con nếu chúng tồn tại
         /// <para>
-        /// Don't really remove models objects, only clear values
+        /// Không thực sự xóa các đối tượng model, chỉ xóa giá trị
         /// </para>
         /// </summary>
         /// <param name="sender"></param>
@@ -813,12 +833,12 @@ namespace RadialMenuPlugin.Controls
             {
                 foreach (var child in children)
                 {
-                    _ClearModel(child); // Clear children if any
+                    _ClearModel(child); // Xóa con nếu có
                 }
             }
             model.Clear();
 
-            // Update parent model "isFolder" property depending it still have at least one active children button
+            // Cập nhật thuộc tính "isFolder" của model cha tùy thuộc vào việc nó còn ít nhất một nút con hoạt động hay không
             var parent = model.Parent;
             if (parent != null)
             {
@@ -832,12 +852,13 @@ namespace RadialMenuPlugin.Controls
             }
         }
         /// <summary>
-        /// Shows context menu event handler
+        /// Bộ xử lý sự kiện hiển thị menu ngữ cảnh
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="eventArgs"></param>
         protected void _RadialControlContextMenu(object sender, ButtonMouseEventArgs eventArgs)
         {
+            if (eventArgs.Model == null) return;
             _ContextMenuForm.Model = eventArgs.Model;
             var location = new Point(eventArgs.ScreenLocation);
             location.X = location.X - 8;
@@ -850,23 +871,23 @@ namespace RadialMenuPlugin.Controls
             _CenterMenuButton.OnButtonMouseEnter += (o, e) =>
             {
                 Logger.Debug($"Center button mouse Enter");
-                Focus(); // Get menu focus
+                Focus(); // Lấy focus menu
                 _CenterMenuButton.SetTooltip(MouseHoverLeftTooltip, MouseHoverRightTooltip);
             };
             _CenterMenuButton.OnButtonMouseLeave += (o, e) =>
             {
                 Logger.Debug($"Center button mouse Leave");
-                _CenterMenuButton.SetTooltip(); // Clear tooltip as we leave button
+                _CenterMenuButton.SetTooltip(); // Xóa tooltip khi chúng ta rời khỏi nút
             };
             _CenterMenuButton.OnButtonClickEvent += (sender, args) =>
             {
-                // Right click on close button toggles edit mode
+                // Chuột phải vào nút đóng để bật/tắt chế độ chỉnh sửa
                 if (args.Buttons == MouseButtons.Alternate)
                 {
                     _EditMode = !_EditMode;
                     foreach (var control in _Controls.Values)
                     {
-                        if (control.Level.Level != 1) control.Show(false); // Hide current opened sub menu
+                        if (control.Level.Level != 1) control.Show(false); // Ẩn menu con đang mở hiện tại
                         control.SwitchEditMode(_EditMode);
                     }
                 }
