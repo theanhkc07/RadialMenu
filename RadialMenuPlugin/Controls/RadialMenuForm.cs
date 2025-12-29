@@ -37,9 +37,9 @@ namespace RadialMenuPlugin.Controls
         protected static int s_maxLevels = 3;
 
         /// <summary>
-        /// Kích thước tổng thể của menu (mặc định: 1000x1000)
+        /// Kích thước tổng thể của menu (mặc định: 400x400)
         /// </summary>
-        protected static Size s_menuSize = new Size(300, 300);
+        protected static Size s_menuSize = new Size(400, 400);
 
         /// <summary>
         /// Khoảng cách giữa các vòng tròn (mặc định: 4)
@@ -134,7 +134,7 @@ namespace RadialMenuPlugin.Controls
         protected PixelLayout _Layout = new PixelLayout();
         protected List<RadialMenuLevel> _Levels = new List<RadialMenuLevel>() {
                 new RadialMenuLevel(1,s_defaultInnerRadius,s_defaultThickness),
-                new RadialMenuLevel(2,s_defaultInnerRadius+s_defaultThickness+s_levelSpacing,s_defaultThickness,360f/(float)s_level2SectorCount/2f, s_level2SectorCount), // Level 2
+                new RadialMenuLevel(2,s_defaultInnerRadius+s_defaultThickness+s_levelSpacing,s_defaultThickness,0, s_level2SectorCount), // Level 2
                 new RadialMenuLevel(3,s_defaultInnerRadius+s_defaultThickness+s_levelSpacing+s_defaultThickness+s_levelSpacing,s_defaultThickness,0, s_level3SectorCount), // Level 3
             };
         /// <summary>
