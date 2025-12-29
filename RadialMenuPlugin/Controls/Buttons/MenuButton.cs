@@ -25,7 +25,7 @@ namespace RadialMenuPlugin.Controls.Buttons.MenuButton
         /// Chấp nhận thả hay không
         /// </summary>
         public bool acceptTarget = true;
-        
+
         public DropTargetArgs(DragEventArgs d) : base(d.Source, d.Data, d.AllowedEffects, d.Location, d.Modifiers, d.Buttons, d.ControlObject)
         { }
     }
@@ -624,20 +624,10 @@ namespace RadialMenuPlugin.Controls.Buttons.MenuButton
             // nếu icon tồn tại, cập nhật vị trí của nó
             if (_Model.Properties.Icon != null && _Model.Properties.IsActive)
             {
-                // Tính toán vị trí icon trong layout
-                // Sử dụng độ chính xác double và tính toán thủ công để đảm bảo căn giữa
-                var centerRadius = _SectorData.InnerRadius + (_SectorData.Thickness / 2.0);
-                var bisectorAngleRad = (_SectorData.StartAngle + _SectorData.SweepAngle / 2.0) * (Math.PI / 180.0);
-                
-                var arcCenterX = _SectorData.ArcCenter.X + centerRadius * Math.Cos(bisectorAngleRad);
-                var arcCenterY = _SectorData.ArcCenter.Y + centerRadius * Math.Sin(bisectorAngleRad);
-
-                // Chuyển đổi Thế giới sang Cục bộ thủ công tương đối với Bounds
-                var localX = arcCenterX - _SectorData.Bounds.X;
-                var localY = arcCenterY - _SectorData.Bounds.Y;
-
-                var posX = localX - (_Model.Properties.Icon.Size.Width / 2.0);
-                var posY = localY - (_Model.Properties.Icon.Size.Height / 2.0);
+                var arcCenterWorld = _SectorData.SectorCenter();
+                var arcCenterLocal = _SectorData.ConvertWorldToLocal(arcCenterWorld);
+                var posX = arcCenterLocal.X - (_Model.Properties.Icon.Size.Width / 2.0);
+                var posY = arcCenterLocal.Y - (_Model.Properties.Icon.Size.Height / 2.0);
 
                 Move(_Buttons[ButtonType.icon], (int)Math.Round(posX), (int)Math.Round(posY)); // cập nhật vị trí icon
                 if (_Model.Properties.IsFolder)
@@ -687,11 +677,11 @@ namespace RadialMenuPlugin.Controls.Buttons.MenuButton
             // Khi ở chế độ chỉnh sửa, cập nhật vị trí icon chỉnh sửa
             if (States.IsEditMode)
             {
-                var centerLocalX = _SectorData.Bounds.X + (_SectorData.Bounds.Width / 2f);
-                var centerLocalY = _SectorData.Bounds.Y + (_SectorData.Bounds.Height / 2f);
-                var posX = centerLocalX - (_Buttons[ButtonType.editmode].Width / 2f);
-                var posY = centerLocalY - (_Buttons[ButtonType.editmode].Height / 2f);
-                Move(_Buttons[ButtonType.editmode], (int)posX, (int)posY); // cập nhật vị trí icon
+                var arcCenterWorld = _SectorData.SectorCenter();
+                var arcCenterLocal = _SectorData.ConvertWorldToLocal(arcCenterWorld);
+                var posX = arcCenterLocal.X - (_Buttons[ButtonType.editmode].Width / 2f);
+                var posY = arcCenterLocal.Y - (_Buttons[ButtonType.editmode].Height / 2f);
+                Move(_Buttons[ButtonType.editmode], (int)Math.Round(posX), (int)Math.Round(posY));
             }
         }
         /// <summary>
@@ -713,8 +703,8 @@ namespace RadialMenuPlugin.Controls.Buttons.MenuButton
                 // Tính toán vị trí icon trong layout
                 var sectorTopLeft = _SectorData.GetPoint(_SectorData.SweepAngle / 2, 10);
                 var sectorTopLeftLocal = _SectorData.ConvertWorldToLocal(sectorTopLeft);
-                var posX = sectorTopLeftLocal.X - (fontSize / 2);
-                var posY = sectorTopLeftLocal.Y - ((fontSize + 2) / 2);
+                var posX = sectorTopLeftLocal.X + (fontSize / 2);
+                var posY = sectorTopLeftLocal.Y + ((fontSize + 2) / 2);
                 Move(_Buttons[ButtonType.trigger], (int)posX, (int)posY);
             }
 
