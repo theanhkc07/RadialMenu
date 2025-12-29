@@ -629,7 +629,7 @@ namespace RadialMenuPlugin.Controls.Buttons.MenuButton
                 var posX = arcCenterLocal.X - (_Model.Properties.Icon.Size.Width / 2.0);
                 var posY = arcCenterLocal.Y - (_Model.Properties.Icon.Size.Height / 2.0);
 
-                Move(_Buttons[ButtonType.icon], (int)Math.Round(posX), (int)Math.Round(posY)); // cập nhật vị trí icon
+                Move(_Buttons[ButtonType.icon], (int)Math.Floor(posX), (int)Math.Floor(posY));
                 if (_Model.Properties.IsFolder)
                 {
                     var outerCenterLocationWorld = _SectorData.GetPoint(_SectorData.SweepAngle / 2, _SectorData.Thickness - (_Buttons[ButtonType.folderIcon].Width / 2) - 2);
@@ -637,7 +637,7 @@ namespace RadialMenuPlugin.Controls.Buttons.MenuButton
                     posX = outerCenterLocationLocal.X - (_Buttons[ButtonType.folderIcon].Width / 2);
                     posY = outerCenterLocationLocal.Y - (_Buttons[ButtonType.folderIcon].Height / 2);
                     _Buttons[ButtonType.folderIcon].Alpha = (float)0.4;
-                    Move(_Buttons[ButtonType.folderIcon], (int)posX, (int)posY);
+                    Move(_Buttons[ButtonType.folderIcon], (int)Math.Floor(posX), (int)Math.Floor(posY));
                 }
                 else
                 {
@@ -681,7 +681,7 @@ namespace RadialMenuPlugin.Controls.Buttons.MenuButton
                 var arcCenterLocal = _SectorData.ConvertWorldToLocal(arcCenterWorld);
                 var posX = arcCenterLocal.X - (_Buttons[ButtonType.editmode].Width / 2f);
                 var posY = arcCenterLocal.Y - (_Buttons[ButtonType.editmode].Height / 2f);
-                Move(_Buttons[ButtonType.editmode], (int)Math.Round(posX), (int)Math.Round(posY));
+                Move(_Buttons[ButtonType.editmode], (int)Math.Floor(posX), (int)Math.Floor(posY));
             }
         }
         /// <summary>
@@ -704,7 +704,7 @@ namespace RadialMenuPlugin.Controls.Buttons.MenuButton
                 var localPt = _SectorData.ConvertWorldToLocal(worldPt);
                 var posX = localPt.X - (_Buttons[ButtonType.trigger].Width / 2f);
                 var posY = localPt.Y - (_Buttons[ButtonType.trigger].Height / 2f);
-                Move(_Buttons[ButtonType.trigger], (int)Math.Round(posX), (int)Math.Round(posY));
+                Move(_Buttons[ButtonType.trigger], (int)Math.Floor(posX), (int)Math.Floor(posY));
             }
 
             if (_Model.Properties.Trigger == "")
