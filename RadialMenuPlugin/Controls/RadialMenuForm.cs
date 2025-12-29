@@ -217,6 +217,7 @@ namespace RadialMenuPlugin.Controls
             // Tự động đóng form khi mất focus (click ra ngoài), trừ khi đang mở menu ngữ cảnh
             LostFocus += (o, e) =>
             {
+                if (_EditMode) return;
                 if (_ContextMenuForm != null && _ContextMenuForm.Visible) return;
                 _OnCloseClickEvent(this);
             };
