@@ -197,8 +197,10 @@ namespace RadialMenuPlugin.Data
         public PointF ConvertLocalToWorld(PointF localLocation)
         {
             // convert mouse location to real circle size (i.e. Parent form size)
-            var localX = Bounds.TopLeft.X + localLocation.X;
-            var localY = Bounds.TopLeft.Y + localLocation.Y;
+            var anchorX = (float)Math.Floor(Bounds.TopLeft.X);
+            var anchorY = (float)Math.Floor(Bounds.TopLeft.Y);
+            var localX = anchorX + localLocation.X;
+            var localY = anchorY + localLocation.Y;
             return new PointF(localX, localY);
         }
         /// <summary>
@@ -208,8 +210,10 @@ namespace RadialMenuPlugin.Data
         /// <returns></returns>
         public PointF ConvertWorldToLocal(PointF worldLocaltion)
         {
-            var worldX = worldLocaltion.X - Bounds.TopLeft.X;
-            var worldY = worldLocaltion.Y - Bounds.TopLeft.Y;
+            var anchorX = (float)Math.Floor(Bounds.TopLeft.X);
+            var anchorY = (float)Math.Floor(Bounds.TopLeft.Y);
+            var worldX = worldLocaltion.X - anchorX;
+            var worldY = worldLocaltion.Y - anchorY;
             return new PointF(worldX, worldY);
         }
         /// <summary>
