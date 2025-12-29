@@ -687,11 +687,10 @@ namespace RadialMenuPlugin.Controls.Buttons.MenuButton
             // Khi ở chế độ chỉnh sửa, cập nhật vị trí icon chỉnh sửa
             if (States.IsEditMode)
             {
-                // Tính toán vị trí icon trong layout
-                var arcCenterWorld = _SectorData.SectorCenter();
-                // FIX: Tính toán thủ công vị trí cục bộ tương đối với vị trí số nguyên của container để tránh lệch sub-pixel
-                var posX = arcCenterWorld.X - (int)_SectorData.Bounds.X - (_Buttons[ButtonType.editmode].Width / 2);
-                var posY = arcCenterWorld.Y - (int)_SectorData.Bounds.Y - (_Buttons[ButtonType.editmode].Height / 2);
+                var centerLocalX = _SectorData.Bounds.X + (_SectorData.Bounds.Width / 2f);
+                var centerLocalY = _SectorData.Bounds.Y + (_SectorData.Bounds.Height / 2f);
+                var posX = centerLocalX - (_Buttons[ButtonType.editmode].Width / 2f);
+                var posY = centerLocalY - (_Buttons[ButtonType.editmode].Height / 2f);
                 Move(_Buttons[ButtonType.editmode], (int)posX, (int)posY); // cập nhật vị trí icon
             }
         }
