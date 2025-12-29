@@ -692,7 +692,6 @@ namespace RadialMenuPlugin.Controls.Buttons.MenuButton
             Bitmap bm = null;
             if (_Model.Properties.Trigger != "")
             {
-                // Tạo ảnh Text
                 var fontSize = 8;
                 var bitmapSize = new Size(fontSize + 2, fontSize + 2); // +2 vì font gạch chân
                 bm = new Bitmap(bitmapSize, PixelFormat.Format32bppRgba);
@@ -700,16 +699,18 @@ namespace RadialMenuPlugin.Controls.Buttons.MenuButton
                 var font = Fonts.Sans(fontSize, FontStyle.None, FontDecoration.Underline);
                 g.DrawText(font, Colors.Black, 0, 0, _Model.Properties.Trigger.ToUpper());
                 g.Dispose();
-                // Tính toán vị trí icon trong layout
-                var sectorTopLeft = _SectorData.GetPoint(_SectorData.SweepAngle / 2, 10);
-                var sectorTopLeftLocal = _SectorData.ConvertWorldToLocal(sectorTopLeft);
-                var posX = sectorTopLeftLocal.X + (fontSize / 2);
-                var posY = sectorTopLeftLocal.Y + ((fontSize + 2) / 2);
-                Move(_Buttons[ButtonType.trigger], (int)posX, (int)posY);
+                _Buttons[ButtonType.trigger].SetImage(bm, new Size(16, 16));
+                var worldPt = _SectorData.GetPoint(_SectorData.SweepAngle / 2, 10);
+                var localPt = _SectorData.ConvertWorldToLocal(worldPt);
+                var posX = localPt.X - (_Buttons[ButtonType.trigger].Width / 2f);
+                var posY = localPt.Y - (_Buttons[ButtonType.trigger].Height / 2f);
+                Move(_Buttons[ButtonType.trigger], (int)Math.Round(posX), (int)Math.Round(posY));
             }
 
-            // Cập nhật ảnh và vị trí icon
-            _Buttons[ButtonType.trigger].SetImage(bm, new Size(16, 16));
+            if (_Model.Properties.Trigger == "")
+            {
+                _Buttons[ButtonType.trigger].SetImage(null, new Size(16, 16));
+            }
         }
 
         #endregion
