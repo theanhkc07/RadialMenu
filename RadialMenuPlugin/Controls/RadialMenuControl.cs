@@ -112,7 +112,6 @@ namespace RadialMenuPlugin.Controls
             set
             {
                 MenuButton btn = null;
-                var raiseEvent = SelectedButtonID != value;
                 _SelectedButtonID = value;
 
                 try
@@ -127,18 +126,12 @@ namespace RadialMenuPlugin.Controls
                         if (btn != null)
                         {
                             btn.States.IsSelected = true;
-                            _ClearSelection(_SelectedButtonID); // Xóa lựa chọn của các nút khác
+                            _ClearSelection(_SelectedButtonID);
                         }
                     }
-                    else // nếu không có lựa chọn, xóa trạng thái lựa chọn của tất cả nút
+                    else
                     {
                         _ClearSelection();
-                    }
-
-                    // Kích hoạt "selectionChanged" nếu lựa chọn thay đổi
-                    if (raiseEvent)
-                    {
-                        // TODO: Triển khai sự kiện thay đổi lựa chọn nếu cần
                     }
                 }
             }

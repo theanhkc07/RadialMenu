@@ -9,16 +9,6 @@ namespace RadialMenuPlugin.Controls.Buttons.Shaped.Base
     /// </summary>
     public class BaseShapedButton : ShapedButton, INotifyPropertyChanged
     {
-        #region Protected/Private Properties
-        #endregion
-
-        #region Public properties
-        #endregion
-
-        #region Public methods
-        #endregion
-
-        #region  Protected/Private Methods
         protected override void AnimationNormalHandler()
         {
             try
@@ -63,6 +53,5 @@ namespace RadialMenuPlugin.Controls.Buttons.Shaped.Base
             }
             catch (Exception e) { Logger.Error(e); }
         }
-        #endregion
     }
 }
