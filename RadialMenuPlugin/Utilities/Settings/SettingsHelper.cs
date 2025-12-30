@@ -4,6 +4,8 @@ using Rhino;
 using Rhino.PlugIns;
 using RadialMenuPlugin.Data;
 using System;
+using System.IO;
+using System.Text.Json;
 
 namespace RadialMenuPlugin.Utilities.Settings
 {
@@ -55,6 +57,101 @@ namespace RadialMenuPlugin.Utilities.Settings
         {
             _Plugin = plugin;
             Instance = this;
+        }
+        public class ExportEntry
+        {
+            public string Guid { get; set; }
+            public string ButtonID { get; set; }
+            public Dictionary<string, string> Properties { get; set; }
+            public string IconBase64 { get; set; }
+            public List<ExportEntry> Children { get; set; }
+        }
+        public void ExportToFile(string filePath)
+        {
+            var roots = Data.ModelController.Instance.GetRoots();
+            List<ExportEntry> entries = new List<ExportEntry>();
+            foreach (var root in roots)
+            {
+                entries.Add(_BuildExportEntryRecursive(root));
+            }
+            var json = JsonSerializer.Serialize(entries, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(filePath, json);
+        }
+        private ExportEntry _BuildExportEntryRecursive(Data.Model model)
+        {
+            var list = model.Data.Properties.toList();
+            var dict = new Dictionary<string, string>();
+            foreach (var kv in list)
+            {
+                dict[kv.Key] = kv.Value;
+            }
+            string iconB64 = null;
+            var iconPath = _IconFileFullPath(model.Data);
+            if (File.Exists(iconPath))
+            {
+                iconB64 = Convert.ToBase64String(File.ReadAllBytes(iconPath));
+            }
+            else if (model.Data.Properties.Icon != null)
+            {
+                using (var ms = new MemoryStream())
+                {
+                    new Bitmap(model.Data.Properties.Icon).Save(ms, ImageFormat.Png);
+                    iconB64 = Convert.ToBase64String(ms.ToArray());
+                }
+            }
+            var entry = new ExportEntry
+            {
+                Guid = model.GUID.ToString(),
+                ButtonID = model.Data.ButtonID,
+                Properties = dict,
+                IconBase64 = iconB64,
+                Children = new List<ExportEntry>()
+            };
+            var children = Data.ModelController.Instance.GetChildren(model);
+            foreach (var child in children)
+            {
+                entry.Children.Add(_BuildExportEntryRecursive(child));
+            }
+            return entry;
+        }
+        public void ImportFromFile(string filePath)
+        {
+            if (!File.Exists(filePath)) return;
+            var content = File.ReadAllText(filePath);
+            var entries = JsonSerializer.Deserialize<List<ExportEntry>>(content);
+            GetSettingsRoot(SettingsDomain.RadialButtonsConfig, out var rootNode, true);
+            foreach (var entry in entries)
+            {
+                _ImportEntryRecursive(entry, rootNode, null);
+            }
+        }
+        private void _ImportEntryRecursive(ExportEntry entry, PersistentSettings parentNode, Data.Model parentModel)
+        {
+            var node = GetNode(Guid.Parse(entry.Guid), parentNode, true);
+            var props = new Data.ButtonProperties(entry.Properties);
+            if (!string.IsNullOrEmpty(entry.IconBase64))
+            {
+                var bytes = Convert.FromBase64String(entry.IconBase64);
+                using (var ms = new MemoryStream(bytes))
+                {
+                    var bm = new Bitmap(ms);
+                    props.Icon = bm;
+                }
+            }
+            var modelData = new Data.ButtonModelData(entry.Properties);
+            modelData.ButtonID = entry.ButtonID;
+            modelData.Properties = props;
+            SetProperties(node, modelData);
+            var model = Data.ModelController.Instance.Find(Guid.Parse(entry.Guid));
+            if (model == null)
+            {
+                model = new Data.Model(Guid.Parse(entry.Guid), entry.ButtonID, parentModel);
+                Data.ModelController.Instance.AddModel(model);
+            }
+            foreach (var child in entry.Children)
+            {
+                _ImportEntryRecursive(child, node, model);
+            }
         }
         /// <summary>
         /// Get a root (level 1) node in persistent settings
